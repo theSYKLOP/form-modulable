@@ -1,0 +1,459 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// MODÈLES AUTHENTIFICATION NATIVE
+// =============================================
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expires   DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("password_resets")
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expires   DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("email_verifications")
+}
+
+// =============================================
+// MODÈLES UTILISATEURS ET ABONNEMENTS
+// =============================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String?  @unique
+  firstName String?
+  lastName  String?
+  avatar    String?
+  
+  // Authentification
+  password     String
+  emailVerified DateTime?
+  
+  // Métadonnées
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLoginAt DateTime?
+  
+  // Relations authentification
+  passwordResets PasswordReset[]
+  emailVerifications EmailVerification[]
+  
+  // Relations business
+  subscription UserSubscription?
+  forms        Form[]
+  formSubmissions FormSubmission[]
+  apiKeys      ApiKey[]
+  formTemplates FormTemplate[]
+  templateReviews TemplateReview[]
+  templateFavorites TemplateFavorite[]
+  
+  @@map("users")
+}
+
+model Subscription {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  
+  // Limites du plan
+  maxForms           Int     @default(5)
+  maxFormSubmissions Int     @default(1000)
+  maxApiCalls        Int     @default(10000)
+  maxStorageMB       Int     @default(100)
+  maxTemplates       Int     @default(3)
+  
+  // Fonctionnalités
+  hasAdvancedFields    Boolean @default(false)
+  hasApiIntegration    Boolean @default(false)
+  hasCustomBranding    Boolean @default(false)
+  hasAnalytics         Boolean @default(false)
+  hasWebhooks          Boolean @default(false)
+  hasPrivateTemplates  Boolean @default(false)
+  hasTemplateSharing   Boolean @default(false)
+  
+  // Tarification
+  priceMonthly Decimal? @db.Decimal(8, 2)
+  priceYearly  Decimal? @db.Decimal(8, 2)
+  
+  // Métadonnées
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userSubscriptions UserSubscription[]
+  
+  @@map("subscriptions")
+}
+
+model UserSubscription {
+  id             String @id @default(cuid())
+  userId         String @unique
+  subscriptionId String
+  
+  // État de l'abonnement
+  status         SubscriptionStatus @default(ACTIVE)
+  billingCycle   BillingCycle       @default(MONTHLY)
+  
+  // Dates importantes
+  startDate   DateTime
+  endDate     DateTime?
+  renewDate   DateTime?
+  cancelledAt DateTime?
+  
+  // Utilisation actuelle
+  currentForms           Int @default(0)
+  currentFormSubmissions Int @default(0)
+  currentApiCalls        Int @default(0)
+  currentStorageMB       Int @default(0)
+  currentTemplates       Int @default(0)
+  
+  // Métadonnées
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  
+  @@map("user_subscriptions")
+}
+
+// =============================================
+// MODÈLES TEMPLATES DE FORMULAIRES
+// =============================================
+
+model FormTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  preview     String?   // URL ou base64 de l'image de prévisualisation
+  
+  // Catégorisation
+  category    TemplateCategoryType
+  tags        String[] // Tags pour la recherche (supporté par PostgreSQL)
+  industry    String?  // Secteur d'activité (e.g., "Santé", "E-commerce")
+  useCase     String?  // Cas d'usage (e.g., "Contact", "Inscription")
+  
+  // Configuration du template
+  config      Json     // Configuration complète du formulaire
+  
+  // Métadonnées du template
+  difficulty  TemplateDifficulty @default(BEGINNER)
+  estimatedTime Int?   // Temps estimé d'utilisation en minutes
+  
+  // État et visibilité
+  isPublic    Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  isVerified  Boolean  @default(false)  // Templates vérifiés par l'équipe
+  
+  // Statistiques d'utilisation
+  usageCount  Int      @default(0)
+  
+  // Métadonnées
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  
+  // Créateur du template
+  authorId    String?
+  authorName  String?  // Nom public de l'auteur
+  
+  // Relations
+  author      User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  forms       Form[]             // Formulaires créés à partir de ce template
+  reviews     TemplateReview[]
+  favorites   TemplateFavorite[]
+  
+  @@map("form_templates")
+}
+
+model TemplateReview {
+  id         String @id @default(cuid())
+  templateId String
+  userId     String
+  rating     Int    // 1-5 étoiles
+  comment    String?
+  
+  // Métadonnées
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  template   FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([templateId, userId])
+  @@map("template_reviews")
+}
+
+model TemplateFavorite {
+  id         String @id @default(cuid())
+  templateId String
+  userId     String
+  
+  // Métadonnées
+  createdAt  DateTime @default(now())
+  
+  // Relations
+  template   FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([templateId, userId])
+  @@map("template_favorites")
+}
+
+// =============================================
+// MODÈLE FORMULAIRE OPTIMISÉ
+// =============================================
+
+model Form {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  
+  // Configuration
+  mode               FormMode @default(EDIT)
+  submitButtonText   String?  @default("Soumettre")
+  cancelButtonText   String?  @default("Annuler")
+  resetButtonText    String?  @default("Réinitialiser")
+  
+  // Validation
+  validateOnSubmit Boolean @default(true)
+  validateOnBlur   Boolean @default(false)
+  validateOnChange Boolean @default(false)
+  
+  // Style et layout
+  layout  FormLayout  @default(VERTICAL)
+  spacing FormSpacing @default(NORMAL)
+  
+  // État du formulaire
+  isPublished Boolean @default(false)
+  isTemplate  Boolean @default(false)
+  
+  // Template source (si créé à partir d'un template)
+  templateId  String?
+  
+  // ✨ NOUVELLES COLONNES JSON POUR STRUCTURE OPTIMISÉE
+  steps    Json?  // Array of FormStep objects
+  fields   Json?  // Array of FormField objects
+  
+  // Métadonnées
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedAt DateTime?
+  
+  // Propriétaire
+  userId String
+  
+  // Relations (simplifiées)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template    FormTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  submissions FormSubmission[]
+  
+  @@map("forms")
+}
+
+// =============================================
+// MODÈLES SOUMISSIONS ET RÉPONSES
+// =============================================
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  formId    String
+  userId    String?
+  
+  // Données
+  data      Json
+  metadata  Json? // IP, user agent, etc.
+  
+  // État
+  status    SubmissionStatus @default(COMPLETED)
+  
+  // Métadonnées
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  form      Form            @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@map("form_submissions")
+}
+
+// =============================================
+// MODÈLES API ET INTÉGRATIONS
+// =============================================
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  key         String   @unique
+  
+  // Permissions
+  permissions Json // Array de permissions
+  
+  // Limites
+  rateLimit   Int?     // Requêtes par minute
+  
+  // État
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime?
+  
+  // Métadonnées
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime?
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("api_keys")
+}
+
+model ApiLog {
+  id        String   @id @default(cuid())
+  apiKeyId  String?
+  
+  // Requête
+  method    String
+  endpoint  String
+  headers   Json?
+  params    Json?
+  body      Json?
+  
+  // Réponse
+  statusCode    Int
+  responseTime  Int // en millisecondes
+  responseSize  Int? // en bytes
+  
+  // Métadonnées
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  
+  @@map("api_logs")
+}
+
+// =============================================
+// ENUMS
+// =============================================
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  SUSPENDED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum FormMode {
+  VIEW
+  EDIT
+  CREATE
+  PREVIEW
+}
+
+enum FormLayout {
+  VERTICAL
+  HORIZONTAL
+  INLINE
+}
+
+enum FormSpacing {
+  COMPACT
+  NORMAL
+  RELAXED
+}
+
+enum FormFieldType {
+  TEXT
+  EMAIL
+  PASSWORD
+  NUMBER
+  TEL
+  URL
+  TEXTAREA
+  SELECT
+  MULTISELECT
+  RADIO
+  CHECKBOX
+  DATE
+  DATETIME_LOCAL
+  FILE
+  SWITCH
+  RANGE
+}
+
+enum FieldWidth {
+  FULL
+  HALF
+  THIRD
+}
+
+enum FieldPosition {
+  LEFT
+  CENTER
+  RIGHT
+}
+
+enum SubmissionStatus {
+  DRAFT
+  COMPLETED
+  ABANDONED
+  PROCESSING
+  ERROR
+}
+
+enum TemplateCategoryType {
+  CONTACT
+  REGISTRATION
+  SURVEY
+  ORDER
+  FEEDBACK
+  BOOKING
+  APPLICATION
+  LEAD_GENERATION
+  EVENT
+  SUPPORT
+  OTHER
+}
+
+enum TemplateDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}

@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Prisma: Generate Client",
+			"type": "shell",
+			"command": "npx prisma generate",
+			"group": "build",
+			"problemMatcher": []
+		}
+	]
+}
