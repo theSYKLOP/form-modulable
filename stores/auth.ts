@@ -9,6 +9,7 @@ export interface User {
   firstName?: string
   lastName?: string
   avatar?: string
+  role: 'USER' | 'ADMIN' | 'MODERATOR' // Ajouter le rôle
   emailVerified?: string
   createdAt: string
   updatedAt: string
@@ -20,6 +21,13 @@ export interface AuthData {
   token?: string
   user?: User
   isAuthenticated: boolean
+}
+
+// Interfaces pour les réponses API
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  message?: string
 }
 
 // Interface pour les formulaires d'authentification
@@ -85,22 +93,25 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (credentials: LoginForm) => {
     isLoginLoading.value = true
     try {
-      const { data } = await $fetch<{ user: User, token: string }>('/api/auth/login', {
+      const response = await $fetch<ApiResponse<{ user: User, token: string }>>('/api/auth/login', {
         method: 'POST',
         body: credentials
       })
 
-      // Mise à jour de l'état
-      authData.value = {
-        token: data.token,
-        user: data.user,
-        isAuthenticated: true
+      if (response.success && response.data) {
+        // Mise à jour de l'état
+        authData.value = {
+          token: response.data.token,
+          user: response.data.user,
+          isAuthenticated: true
+        }
+
+        // Pas d'appel à updateLastLogin - c'est fait côté serveur dans l'API login
+
+        return { success: true, data: response.data }
       }
 
-      // Mise à jour de la date de dernière connexion
-      await updateLastLogin()
-
-      return { success: true, data }
+      throw new Error('Réponse invalide du serveur')
     } catch (error: any) {
       console.error('Erreur de connexion:', error)
       return { 
@@ -115,19 +126,23 @@ export const useAuthStore = defineStore('auth', () => {
   const register = async (userData: RegisterForm) => {
     isRegisterLoading.value = true
     try {
-      const { data } = await $fetch<{ user: User, token: string }>('/api/auth/register', {
+      const response = await $fetch<ApiResponse<{ user: User, token: string }>>('/api/auth/register', {
         method: 'POST',
         body: userData
       })
 
-      // Mise à jour de l'état
-      authData.value = {
-        token: data.token,
-        user: data.user,
-        isAuthenticated: true
+      if (response.success && response.data) {
+        // Mise à jour de l'état
+        authData.value = {
+          token: response.data.token,
+          user: response.data.user,
+          isAuthenticated: true
+        }
+
+        return { success: true, data: response.data }
       }
 
-      return { success: true, data }
+      throw new Error('Réponse invalide du serveur')
     } catch (error: any) {
       console.error('Erreur d\'inscription:', error)
       return { 
@@ -161,19 +176,19 @@ export const useAuthStore = defineStore('auth', () => {
       }
       
       // Redirection vers la page de connexion
-      await navigateTo('/auth/login')
+      await navigateTo('/auth?form=login')
     }
   }
 
   const requestPasswordReset = async (email: string) => {
     isResetPasswordLoading.value = true
     try {
-      await $fetch('/api/auth/password-reset/request', {
+      const response = await $fetch<ApiResponse>('/api/auth/password-reset/request', {
         method: 'POST',
         body: { email }
       })
 
-      return { success: true }
+      return { success: response.success, message: response.message }
     } catch (error: any) {
       console.error('Erreur de demande de réinitialisation:', error)
       return { 
@@ -188,12 +203,12 @@ export const useAuthStore = defineStore('auth', () => {
   const resetPassword = async (token: string, password: string) => {
     isLoading.value = true
     try {
-      await $fetch('/api/auth/password-reset/confirm', {
+      const response = await $fetch<ApiResponse>('/api/auth/password-reset/confirm', {
         method: 'POST',
         body: { token, password }
       })
 
-      return { success: true }
+      return { success: response.success, message: response.message }
     } catch (error: any) {
       console.error('Erreur de réinitialisation du mot de passe:', error)
       return { 
@@ -208,7 +223,7 @@ export const useAuthStore = defineStore('auth', () => {
   const changePassword = async (passwords: ChangePasswordForm) => {
     isLoading.value = true
     try {
-      await $fetch('/api/auth/change-password', {
+      const response = await $fetch<ApiResponse>('/api/auth/change-password', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token.value}`
@@ -216,7 +231,7 @@ export const useAuthStore = defineStore('auth', () => {
         body: passwords
       })
 
-      return { success: true }
+      return { success: response.success, message: response.message }
     } catch (error: any) {
       console.error('Erreur de changement de mot de passe:', error)
       return { 
@@ -231,7 +246,7 @@ export const useAuthStore = defineStore('auth', () => {
   const updateProfile = async (profileData: UpdateProfileForm) => {
     isUpdateProfileLoading.value = true
     try {
-      const { data } = await $fetch<{ user: User }>('/api/auth/profile', {
+      const response = await $fetch<ApiResponse<{ user: User }>>('/api/auth/profile', {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token.value}`
@@ -239,10 +254,14 @@ export const useAuthStore = defineStore('auth', () => {
         body: profileData
       })
 
-      // Mise à jour de l'utilisateur dans le store
-      authData.value.user = data.user
+      if (response.success && response.data) {
+        // Mise à jour de l'utilisateur dans le store
+        authData.value.user = response.data.user
 
-      return { success: true, data }
+        return { success: true, data: response.data }
+      }
+
+      throw new Error('Réponse invalide du serveur')
     } catch (error: any) {
       console.error('Erreur de mise à jour du profil:', error)
       return { 
@@ -254,48 +273,72 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const verifyEmail = async (token: string) => {
+  // Actions pour les nouvelles fonctionnalités
+  const forgotPassword = async (email: string) => {
     isLoading.value = true
     try {
-      const { data } = await $fetch<{ user: User }>('/api/auth/verify-email', {
+      const response = await $fetch<ApiResponse>('/api/auth/forgot-password', {
         method: 'POST',
-        body: { token }
+        body: { email }
       })
 
-      // Mise à jour de l'utilisateur avec email vérifié
-      if (authData.value.user) {
-        authData.value.user = data.user
-      }
-
-      return { success: true, data }
+      return { success: response.success, message: response.message }
     } catch (error: any) {
-      console.error('Erreur de vérification d\'email:', error)
-      return { 
-        success: false, 
-        error: error.data?.message || 'Erreur lors de la vérification de l\'email' 
-      }
+      return { success: false, error: error.data?.message || 'Erreur lors de la demande de réinitialisation' }
     } finally {
       isLoading.value = false
     }
   }
 
-  const resendEmailVerification = async () => {
+  const resetPasswordWithToken = async (token: string, password: string, confirmPassword: string) => {
     isLoading.value = true
     try {
-      await $fetch('/api/auth/verify-email/resend', {
+      const response = await $fetch<ApiResponse>('/api/auth/reset-password', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token.value}`
-        }
+        body: { token, password, confirmPassword }
       })
 
-      return { success: true }
+      return { success: response.success, message: response.message }
     } catch (error: any) {
-      console.error('Erreur de renvoi de vérification:', error)
-      return { 
-        success: false, 
-        error: error.data?.message || 'Erreur lors du renvoi de la vérification' 
+      return { success: false, error: error.data?.message || 'Erreur lors de la réinitialisation' }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const verifyEmail = async (token: string) => {
+    isLoading.value = true
+    try {
+      const response = await $fetch<ApiResponse<{ user: User, token: string }>>('/api/auth/verify-email', {
+        method: 'POST',
+        body: { token }
+      })
+
+      if (response.success && response.data) {
+        authData.value.user = response.data.user
+        authData.value.token = response.data.token
+        authData.value.isAuthenticated = true
       }
+
+      return { success: response.success, message: response.message }
+    } catch (error: any) {
+      return { success: false, error: error.data?.message || 'Erreur lors de la vérification' }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const resendVerification = async (email: string) => {
+    isLoading.value = true
+    try {
+      const response = await $fetch<ApiResponse>('/api/auth/resend-verification', {
+        method: 'POST',
+        body: { email }
+      })
+
+      return { success: response.success, message: response.message }
+    } catch (error: any) {
+      return { success: false, error: error.data?.message || 'Erreur lors du renvoi' }
     } finally {
       isLoading.value = false
     }
@@ -305,17 +348,21 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return false
 
     try {
-      const { data } = await $fetch<{ user: User }>('/api/auth/me', {
+      const response = await $fetch<ApiResponse<{ user: User }>>('/api/auth/me', {
         headers: {
           Authorization: `Bearer ${token.value}`
         }
       })
 
-      // Mise à jour des données utilisateur
-      authData.value.user = data.user
-      authData.value.isAuthenticated = true
+      if (response.success && response.data) {
+        // Mise à jour des données utilisateur
+        authData.value.user = response.data.user
+        authData.value.isAuthenticated = true
 
-      return true
+        return true
+      }
+
+      return false
     } catch (error) {
       console.error('Token invalide, déconnexion:', error)
       await logout()
@@ -323,34 +370,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const updateLastLogin = async () => {
-    try {
-      await $fetch('/api/auth/last-login', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token.value}`
-        }
-      })
-      
-      if (authData.value.user) {
-        authData.value.user.lastLoginAt = new Date().toISOString()
-      }
-    } catch (error) {
-      console.error('Erreur de mise à jour de la dernière connexion:', error)
-    }
-  }
-
   const refreshToken = async () => {
     try {
-      const { data } = await $fetch<{ token: string }>('/api/auth/refresh', {
+      const response = await $fetch<ApiResponse<{ token: string }>>('/api/auth/refresh', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token.value}`
         }
       })
 
-      authData.value.token = data.token
-      return { success: true, token: data.token }
+      if (response.success && response.data) {
+        authData.value.token = response.data.token
+        return { success: true, token: response.data.token }
+      }
+
+      throw new Error('Réponse invalide du serveur')
     } catch (error: any) {
       console.error('Erreur de rafraîchissement du token:', error)
       await logout()
@@ -382,9 +416,10 @@ export const useAuthStore = defineStore('auth', () => {
     changePassword,
     updateProfile,
     verifyEmail,
-    resendEmailVerification,
+    resendVerification,
     checkAuthStatus,
-    updateLastLogin,
-    refreshToken
+    refreshToken,
+    forgotPassword,
+    resetPasswordWithToken,
   }
 })

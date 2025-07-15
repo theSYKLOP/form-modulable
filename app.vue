@@ -1,45 +1,44 @@
 <template>
   <div>
-    <NuxtRouteAnnouncer />
-    
-    <!-- Navigation pour les utilisateurs authentifiés -->
-    <nav v-if="isAuthenticated" class="bg-white shadow-sm border-b border-gray-200 mb-8">
-      <div class="container mx-auto px-8">
-        <div class="flex justify-between items-center h-16">
-          <div class="flex space-x-8">
-            <NuxtLink to="/dashboard" class="text-blue-600 hover:text-blue-800 font-medium">Dashboard</NuxtLink>
-            <NuxtLink to="/users" class="text-blue-600 hover:text-blue-800">Utilisateurs</NuxtLink>
-            <NuxtLink to="/forms" class="text-blue-600 hover:text-blue-800">Formulaires</NuxtLink>
-            <NuxtLink to="/templates" class="text-blue-600 hover:text-blue-800">Templates</NuxtLink>
-          </div>
-          <div v-if="user" class="flex items-center space-x-4">
-            <span class="text-sm text-gray-700">{{ userFullName }}</span>
-            <button @click="handleLogout" class="text-sm text-red-600 hover:text-red-800">
-              Déconnexion
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Contenu de la page -->
-    <NuxtPage />
+    <component :is="currentLayout">
+      <NuxtPage />
+    </component>
   </div>
 </template>
 
 <script setup>
+// Imports
+import DefaultLayout from '~/layouts/default.vue'
+import AuthLayout from '~/layouts/auth.vue'
+import AdminLayout from '~/layouts/admin.vue'
+
+// Store d'authentification
 const authStore = useAuthStore()
-const { logout } = authStore
-const { isAuthenticated, user, userFullName } = storeToRefs(authStore)
+const { isAuthenticated, user } = storeToRefs(authStore)
 
-// Gestion de la déconnexion
-const handleLogout = async () => {
-  await logout()
-}
+// Route actuelle
+const route = useRoute()
 
-// Vérification de l'authentification au montage
+// Déterminer le layout selon la route et l'authentification
+const currentLayout = computed(() => {
+  // Pages d'administration (uniquement pour les admins)
+  if (route.path.startsWith('/admin')) { // Enlevé le slash final
+    return AdminLayout
+  }
+  
+  // Pages d'authentification
+  if (route.path.startsWith('/auth')) {
+    return AuthLayout
+  }
+  
+  // Toutes les autres pages publiques
+  return DefaultLayout
+})
+
+// Vérifier l'authentification au chargement
 onMounted(async () => {
-  if (process.client) {
+  const token = useCookie('auth-token').value || localStorage.getItem('auth-token')
+  if (token) {
     await authStore.checkAuthStatus()
   }
 })

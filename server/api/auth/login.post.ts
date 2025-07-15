@@ -1,20 +1,12 @@
-import { withAccelerate } from "@prisma/extension-accelerate"
 import { PrismaClient } from '@prisma/client'
-import { hashPassword, verifyPassword, generateToken, isValidEmail, sanitizeUserData } from '~/utils/auth'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
-const prisma = new PrismaClient().$extends(withAccelerate())
+const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
-  if (getMethod(event) !== 'POST') {
-    throw createError({
-      statusCode: 405,
-      statusMessage: 'Method Not Allowed'
-    })
-  }
-
   try {
     const { email, password } = await readBody(event)
-    const { jwtSecret } = useRuntimeConfig()
 
     // Validation des données
     if (!email || !password) {
@@ -24,29 +16,9 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    if (!isValidEmail(email)) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Format d\'email invalide'
-      })
-    }
-
-    // Recherche de l'utilisateur
+    // Chercher l'utilisateur
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        avatar: true,
-        password: true,
-        emailVerified: true,
-        createdAt: true,
-        updatedAt: true,
-        lastLoginAt: true
-      }
+      where: { email }
     })
 
     if (!user) {
@@ -56,8 +28,9 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Vérification du mot de passe
-    const isPasswordValid = await verifyPassword(password, user.password)
+    // Vérifier le mot de passe
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+
     if (!isPasswordValid) {
       throw createError({
         statusCode: 401,
@@ -65,36 +38,37 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Génération du token JWT
-    const token = generateToken(user.id, jwtSecret)
+    // Créer le token JWT avec le rôle
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email, 
+        role: user.role 
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    )
 
-    // Mise à jour de la date de dernière connexion
+    // Mettre à jour lastLoginAt
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() }
     })
 
-    // Nettoyage des données utilisateur
-    const sanitizedUser = sanitizeUserData(user)
+    // Retourner les données sans le mot de passe
+    const { password: _, ...userWithoutPassword } = user
 
     return {
       success: true,
       data: {
-        user: sanitizedUser,
-        token
+        token,
+        user: {
+          ...userWithoutPassword,
+          lastLoginAt: new Date()
+        }
       }
     }
-
-  } catch (error: any) {
-    console.error('Erreur de connexion:', error)
-    
-    if (error.statusCode) {
-      throw error
-    }
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Erreur interne du serveur'
-    })
+  } catch (error) {
+    throw error
   }
 })

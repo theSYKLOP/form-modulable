@@ -1,14 +1,16 @@
 export default defineNuxtRouteMiddleware((to) => {
-  const { isAuthenticated } = useAuthStore()
+  const authStore = useAuthStore()
+  const { isAuthenticated, user } = storeToRefs(authStore)
   
   // Pages publiques qui ne nécessitent pas d'authentification
   const publicPages = [
-    '/auth/login',
-    '/auth/register', 
+    '/',
+    '/about',
+    '/operations',
+    '/auth', // Page unique d'authentification
     '/auth/forgot-password',
     '/auth/reset-password',
-    '/auth/verify-email',
-    '/'
+    '/auth/verify-email'
   ]
   
   // Vérifier si la route actuelle est publique
@@ -17,12 +19,31 @@ export default defineNuxtRouteMiddleware((to) => {
   )
   
   // Si l'utilisateur n'est pas authentifié et essaie d'accéder à une page protégée
-  if (!isAuthenticated && !isPublicPage) {
-    return navigateTo('/auth/login')
+  if (!isAuthenticated.value && !isPublicPage) {
+    return navigateTo('/auth?form=login')
   }
   
   // Si l'utilisateur est authentifié et essaie d'accéder aux pages d'auth
-  if (isAuthenticated && (to.path.startsWith('/auth/') && to.path !== '/auth/profile')) {
-    return navigateTo('/dashboard')
+  if (isAuthenticated.value && to.path.startsWith('/auth')) {
+    // Rediriger selon le rôle
+    if (user.value?.role === 'ADMIN') {
+      return navigateTo('/admin')
+    } else {
+      return navigateTo('/')
+    }
+  }
+  
+  // Vérifier les permissions admin pour les pages admin
+  if (to.path.startsWith('/admin')) {
+    if (!isAuthenticated.value) {
+      return navigateTo('/auth?form=login')
+    }
+    
+    if (user.value?.role !== 'ADMIN') {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Accès refusé - Permissions administrateur requises'
+      })
+    }
   }
 })
