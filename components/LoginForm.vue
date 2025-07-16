@@ -169,8 +169,8 @@ const authStore = useAuthStore()
 const { login } = authStore
 const { isLoginLoading } = storeToRefs(authStore)
 
-// État du formulaire
-const form = reactive({
+// État du formulaire - Utiliser ref au lieu de reactive
+const form = ref({
   email: '',
   password: ''
 })
@@ -181,24 +181,24 @@ const error = ref('')
 const emailError = ref('')
 const passwordError = ref('')
 
-// Validation du formulaire
+// Validation du formulaire - Accéder aux valeurs avec .value
 const isFormValid = computed(() => {
-  return form.email.length > 0 && 
-         form.password.length > 0 && 
-         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+  return form.value.email.length > 0 && 
+         form.value.password.length > 0 && 
+         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)
 })
 
 // Validation en temps réel
-watch(() => form.email, (newEmail) => {
+watch(() => form.value.email, (newEmail) => {
   emailError.value = ''
   if (newEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
     emailError.value = 'Format d\'email invalide'
   }
 })
 
-watch(() => form.password, () => {
+watch(() => form.value.password, () => {
   passwordError.value = ''
-  if (form.password && form.password.length < 6) {
+  if (form.value.password && form.value.password.length < 6) {
     passwordError.value = 'Le mot de passe doit contenir au moins 6 caractères'
   }
 })
@@ -210,25 +210,25 @@ const handleLogin = async () => {
   passwordError.value = ''
 
   // Validation côté client
-  if (!form.email) {
+  if (!form.value.email) {
     emailError.value = 'L\'email est requis'
     return
   }
   
-  if (!form.password) {
+  if (!form.value.password) {
     passwordError.value = 'Le mot de passe est requis'
     return
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
     emailError.value = 'Format d\'email invalide'
     return
   }
 
   try {
     const result = await login({
-      email: form.email,
-      password: form.password,
+      email: form.value.email,
+      password: form.value.password,
       remember: rememberMe.value
     })
 

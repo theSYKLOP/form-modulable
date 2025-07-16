@@ -1,0 +1,2526 @@
+/* FormBuilder Component Styles */
+
+.form-builder {
+  width: 100%;
+  height: 100%;
+}
+
+/* Edit mode styles */
+.form-builder-edit {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Layout container */
+.form-builder-layout {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Main container */
+.form-builder-main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Steps navigation */
+.form-steps-nav {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+}
+
+.form-step-tab {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.form-step-tab:hover {
+  background-color: #f9fafb;
+}
+
+.form-step-tab:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  z-index: 10;
+}
+
+.form-step-tab:first-child {
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+}
+
+.form-step-tab:last-child {
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+.form-step-tab:not(:first-child) {
+  margin-left: -1px;
+}
+
+.form-step-tab--active {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+  z-index: 10;
+}
+
+.form-step-tab--completed {
+  color: #059669;
+  background-color: #ecfdf5;
+  border-color: #10b981;
+}
+
+.form-step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+  font-size: 0.75rem;
+  background-color: #e5e7eb;
+  border-radius: 50%;
+}
+
+.form-step-tab--active .form-step-number {
+  background-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.form-step-tab--completed .form-step-number {
+  background-color: #bbf7d0;
+  color: #047857;
+}
+
+.form-step-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Content area */
+.form-builder-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  max-height: 75vh;
+}
+
+/* Custom scrollbar for better design consistency */
+.form-builder-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-builder-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.form-builder-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.form-builder-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.form-step-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.form-step-header {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.form-step-title-large {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.form-step-description {
+  color: #6b7280;
+}
+
+/* Form builder toolbar */
+.form-builder-toolbar {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* Fields container */
+.form-fields-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: hidden;
+  overflow-x: scroll;
+  position: relative;
+}
+
+/* Custom scrollbar for fields container */
+.form-fields-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-fields-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.form-fields-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.form-fields-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Enhanced dropzone with better visual feedback */
+.form-fields-dropzone {
+  flex: 1;
+  min-height: 24rem;
+  padding: 1rem;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.form-fields-dropzone--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-style: dashed;
+  border-width: 3px;
+  border-color: #cbd5e1;
+}
+
+.form-fields-dropzone--drag-over {
+  border-color: #3b82f6;
+  border-width: 3px;
+  background: rgba(59, 130, 246, 0.05);
+  animation: dropzonePulse 2s infinite;
+}
+
+@keyframes dropzonePulse {
+  0%, 100% {
+    border-color: #3b82f6;
+    box-shadow: inset 0 0 0 0 rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    border-color: #2563eb;
+    box-shadow: inset 0 0 20px 0 rgba(59, 130, 246, 0.1);
+  }
+}
+
+.form-fields-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+}
+
+.form-fields-empty .empty-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.form-fields-empty .empty-content p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.form-field-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+  transition: all 0.2s;
+}
+
+/* Enhanced row layout */
+.form-fields-dropzone--row-layout .form-field-wrapper {
+  margin-bottom: 0;
+}
+
+/* Enhanced Drop zones for intelligent positioning */
+.field-drop-zone {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 12px;
+  background: transparent;
+  z-index: 30;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+}
+
+.field-drop-zone--left {
+  left: -6px;
+}
+
+.field-drop-zone--right {
+  right: -6px;
+}
+
+.field-drop-zone--active {
+  opacity: 1;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 6px;
+  box-shadow: 
+    0 0 12px rgba(59, 130, 246, 0.6),
+    0 0 24px rgba(59, 130, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: dropZonePulse 2s infinite;
+}
+
+@keyframes dropZonePulse {
+  0%, 100% {
+    transform: scaleY(1);
+    box-shadow: 
+      0 0 12px rgba(59, 130, 246, 0.6),
+      0 0 24px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    transform: scaleY(1.05);
+    box-shadow: 
+      0 0 16px rgba(59, 130, 246, 0.8),
+      0 0 32px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* Enhanced Row drop indicators */
+.row-drop-indicator {
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 2px;
+  margin: 0.75rem 0;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.row-drop-indicator--active {
+  opacity: 1;
+  box-shadow: 
+    0 0 8px rgba(59, 130, 246, 0.6),
+    0 2px 4px rgba(59, 130, 246, 0.3);
+  animation: rowDropGlow 2s infinite;
+}
+
+.row-drop-indicator--active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes rowDropGlow {
+  0%, 100% {
+    box-shadow: 
+      0 0 8px rgba(59, 130, 246, 0.6),
+      0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 12px rgba(59, 130, 246, 0.8),
+      0 3px 6px rgba(59, 130, 246, 0.4);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Enhanced Auto-spacing indicators */
+.field-spacing-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 25;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.field-spacing-indicator--left {
+  left: -2px;
+}
+
+.field-spacing-indicator--right {
+  right: -2px;
+}
+
+.field-spacing-indicator--active {
+  opacity: 1;
+  animation: spacingPulse 1.5s infinite;
+}
+
+@keyframes spacingPulse {
+  0%, 100% {
+    transform: translateY(-50%) scale(1);
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+  }
+}
+
+.form-field-wrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.08),
+    0 3px 6px rgba(0, 0, 0, 0.06);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.form-field-wrapper:hover .field-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Enhanced field states */
+.form-field-wrapper--dragging {
+  transform: scale(1.02) rotate(1deg);
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.15),
+    0 5px 15px rgba(0, 0, 0, 0.08);
+  border-color: #3b82f6;
+  z-index: 100;
+  cursor: grabbing;
+}
+
+.form-field-wrapper--drop-target {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  animation: dropTargetPulse 2s infinite;
+}
+
+@keyframes dropTargetPulse {
+  0%, 100% {
+    border-color: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    border-color: #059669;
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+  }
+}
+
+.form-field-wrapper--resizing {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+  animation: resizePulse 2s infinite;
+}
+
+@keyframes resizePulse {
+  0%, 100% {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    border-color: #d97706;
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.1);
+  }
+}
+
+
+/* Enhanced field controls with better transitions */
+.field-controls {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.form-field-wrapper:hover .field-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Control buttons */
+.control-btn {
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.control-btn--danger {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.control-btn--danger:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.form-field-preview {
+  position: relative;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.2s;
+}
+
+.form-field-preview:hover {
+  background: rgba(59, 130, 246, 0.02);
+  border-color: #93c5fd;
+}
+
+.form-field-preview--selected {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.form-field-controls {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+/* No steps message */
+.form-no-steps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 4rem 0;
+}
+
+/* Preview mode styles */
+.form-builder-preview {
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+.form-progress {
+  margin-bottom: 2rem;
+}
+
+.form-progress-bar {
+  width: 100%;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  height: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-progress-fill {
+  background-color: #3b82f6;
+  height: 0.5rem;
+  border-radius: 9999px;
+  transition: width 0.3s;
+}
+
+.form-progress-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.form-step-preview {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 2rem;
+}
+
+.form-fields-preview {
+  margin-top: 1.5rem;
+}
+
+.form-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.form-nav-btn {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  border: 1px solid;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.form-nav-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-nav-btn--primary {
+  color: white;
+  background-color: #3b82f6;
+  border-color: transparent;
+}
+
+.form-nav-btn--primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.form-nav-btn--secondary {
+  color: #374151;
+  background-color: white;
+  border-color: #d1d5db;
+}
+
+.form-nav-btn--secondary:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
+
+.form-nav-btn--success {
+  color: white;
+  background-color: #059669;
+  border-color: transparent;
+}
+
+.form-nav-btn--success:hover:not(:disabled) {
+  background-color: #047857;
+}
+
+/* No content message */
+.form-no-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+}
+
+/* View toggle toolbar */
+.form-builder-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+/* Form builder instructions */
+.form-builder-instructions {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background-color: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+/* Field width classes */
+.field-width--full {
+  width: 100%;
+}
+
+.field-width--half {
+  width: 50%;
+}
+
+.field-width--third {
+  width: 33.333%;
+}
+
+.field-width--quarter {
+  width: 25%;
+}
+
+/* Field position classes */
+.field-position--left {
+  margin-right: auto;
+}
+
+.field-position--center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.field-position--right {
+  margin-left: auto;
+}
+
+/* Size controls button */
+.form-field-control-btn--size {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.form-field-control-btn--size:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.form-field-control-btn--size.form-field-control-btn--active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Size controls container */
+.form-field-size-controls {
+  margin-top: 0.75rem;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form field wrapper layout */
+.form-field-wrapper {
+  position: relative;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: white;
+  transition: all 0.2s;
+}
+
+.form-field-wrapper:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Field edit overlay for the edit button */
+.field-edit-overlay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Bouton d'édition principal */
+.field-edit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.field-edit-button:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+}
+
+/* Tooltip pour le bouton d'édition */
+.field-edit-tooltip {
+  position: absolute;
+  top: -2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 20;
+}
+
+.field-edit-button:hover .field-edit-tooltip {
+  opacity: 1;
+}
+
+/* Barre d'outils du champ sélectionné */
+.field-toolbar {
+  position: absolute;
+  top: -3rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 15;
+  animation: slideDown 0.2s ease-out;
+}
+
+.field-toolbar-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.field-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0;
+}
+
+.field-toolbar-btn--edit {
+  background: #3b82f6;
+  color: white;
+}
+
+.field-toolbar-btn--edit:hover {
+  background: #2563eb;
+}
+
+.field-toolbar-btn--duplicate {
+  background: #10b981;
+  color: white;
+}
+
+.field-toolbar-btn--duplicate:hover {
+  background: #059669;
+}
+
+.field-toolbar-btn--delete {
+  background: #ef4444;
+  color: white;
+}
+
+.field-toolbar-btn--delete:hover {
+  background: #dc2626;
+}
+
+.field-toolbar-info {
+  display: flex;
+  align-items: center;
+}
+
+.field-type-badge {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Responsive field layout */
+@media (min-width: 768px) {
+  .form-fields-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-field-wrapper {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-field-wrapper .form-field-preview.field-width--full {
+    width: 100%;
+  }
+
+  .form-field-wrapper .form-field-preview.field-width--half {
+    width: 50%;
+    max-width: 50%;
+  }
+
+  .form-field-wrapper .form-field-preview.field-width--third {
+    width: 33.333%;
+    max-width: 33.333%;
+  }
+
+  .form-field-wrapper .form-field-preview.field-width--quarter {
+    width: 25%;
+    max-width: 25%;
+  }
+}
+
+/* Visual indicators for field sizes */
+.form-field-preview::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  height: 3px;
+  border-radius: 0.25rem 0.25rem 0 0;
+  opacity: 0.7;
+}
+
+.field-width--full .form-field-preview::before {
+  background-color: #3b82f6;
+}
+
+.field-width--half .form-field-preview::before {
+  background-color: #10b981;
+}
+
+.field-width--third .form-field-preview::before {
+  background-color: #f59e0b;
+}
+
+.field-width--quarter .form-field-preview::before {
+  background-color: #8b5cf6;
+}
+
+/* Corner control styling */
+.form-field-preview {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.form-field-preview--selected {
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-radius: 6px;
+}
+
+.form-field-preview:hover {
+  background: rgba(59, 130, 246, 0.02);
+}
+
+/* Field controls styling */
+.form-field-control-btn--mode {
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.form-field-control-btn--mode:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.form-field-control-btn--mode.form-field-control-btn--active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+/* Enhanced scroll containers with better visual feedback */
+.form-fields-container.has-many-fields {
+  max-height: calc(100vh - 300px);
+}
+
+.form-fields-dropzone.scrollable {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Grid overlay for resize preview */
+.form-fields-container.grid-overlay {
+  background-image: 
+    linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 0;
+  animation: grid-pulse 2s infinite;
+}
+
+@keyframes grid-pulse {
+  0%, 100% { 
+    background-image: 
+      linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+  }
+  50% { 
+    background-image: 
+      linear-gradient(rgba(59, 130, 246, 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.15) 1px, transparent 1px);
+  }
+}
+
+/* Resize preview overlay */
+.resize-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.05);
+  z-index: 1000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-indicator {
+  background: white;
+  border: 2px solid #3b82f6;
+  border-radius: 1rem;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  min-width: 320px;
+  max-width: 400px;
+  animation: preview-bounce 0.3s ease-out;
+}
+
+/* Header avec icône et titre */
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.preview-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* Contenu principal avec largeur et mouvement */
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.preview-current {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.preview-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.preview-percentage {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #3b82f6;
+}
+
+.preview-delta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+}
+
+.delta-arrow {
+  font-size: 1.25rem;
+  color: #3b82f6;
+  font-weight: bold;
+}
+
+.delta-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Guide visuel des largeurs */
+.preview-guide {
+  margin-bottom: 1rem;
+}
+
+.width-options {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.width-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.width-option.active {
+  background: #3b82f6;
+  color: white;
+  transform: scale(1.05);
+}
+
+.width-option.start {
+  background: #f59e0b;
+  color: white;
+}
+
+.width-option.active.start {
+  background: linear-gradient(135deg, #f59e0b 0%, #3b82f6 100%);
+}
+
+.width-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.width-option.active .width-bar {
+  opacity: 1;
+  height: 6px;
+}
+
+.width-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Conseils d'utilisation */
+.preview-tips {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  border-left: 3px solid #3b82f6;
+}
+
+.tips-icon {
+  font-size: 1rem;
+  margin-top: 0.125rem;
+}
+
+.tips-text {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+@keyframes preview-bounce {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Enhanced field resize preview styles */
+.field-resize-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.08);
+  border: 3px dashed #3b82f6;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+  animation: resizePreviewPulse 2s infinite;
+}
+
+@keyframes resizePreviewPulse {
+  0%, 100% {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.08);
+  }
+  50% {
+    border-color: #2563eb;
+    background: rgba(59, 130, 246, 0.12);
+  }
+}
+
+.resize-preview-content {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 
+    0 8px 25px rgba(59, 130, 246, 0.4),
+    0 3px 10px rgba(59, 130, 246, 0.2);
+  animation: resizeContentBounce 0.5s ease-out;
+}
+
+@keyframes resizeContentBounce {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.resize-preview-label {
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced field states during resize */
+.field-wrapper--resizing {
+  transform: scale(1.02);
+  z-index: 10;
+  transition: transform 0.2s ease;
+}
+
+.field-wrapper--affected {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
+  animation: affected-pulse 2s infinite;
+}
+
+@keyframes affected-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3);
+  }
+}
+
+/* Improved field selection and corner control states */
+.field-wrapper.field-selected {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+.field-wrapper.field-corner-active {
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2) !important;
+}
+
+.field-wrapper.field-resizing {
+  border-color: #eab308 !important;
+  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2) !important;
+  background: rgba(234, 179, 8, 0.05) !important;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.resize-preview-label {
+  white-space: nowrap;
+}
+
+/* Field wrapper classes for intelligent layout */
+.form-field-wrapper.field-wrapper--resizing {
+  transform: scale(1.02);
+  z-index: 10;
+}
+
+.form-field-preview--active-resize {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.form-field-preview--affected {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+  transition: all 0.2s ease;
+}
+
+/* Scroll indicators for better UX */
+.scrollable-container {
+  position: relative;
+}
+
+.scrollable-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), transparent);
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.scrollable-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.8), transparent);
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.scrollable-container.has-scroll-top::before {
+  opacity: 1;
+}
+
+.scrollable-container.has-scroll-bottom::after {
+  opacity: 1;
+}
+
+/* Styles spécifiques pour field-wrapper (utilisé dans FormBuilder.vue) */
+.field-wrapper {
+  position: relative;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: white;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.field-wrapper:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.field-wrapper.field-selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  margin-top: 3rem; /* Espace pour la barre d'outils */
+}
+
+/* Enhanced field controls visibility */
+.form-field-wrapper:hover .field-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.field-controls {
+  transform: translateY(-4px);
+  transition: all 0.2s ease;
+}
+
+/* Responsive adjustments for scroll containers */
+@media (max-height: 600px) {
+  .form-fields-container.has-many-fields {
+    max-height: calc(100vh - 200px);
+  }
+  
+  .form-fields-dropzone.scrollable {
+    max-height: 50vh;
+  }
+}
+
+@media (max-height: 400px) {
+  .form-fields-container.has-many-fields {
+    max-height: calc(100vh - 150px);
+  }
+  
+  .form-fields-dropzone.scrollable {
+    max-height: 40vh;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .form-field-wrapper {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s ease;
+  }
+  
+  .form-field-preview {
+    transition: border-color 0.2s ease,
+                box-shadow 0.2s ease,
+                background-color 0.2s ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form-field-wrapper,
+  .form-field-preview,
+  .resize-preview-overlay,
+  .preview-indicator {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Stack fields vertically on mobile */
+  .field-width--half,
+  .field-width--third {
+    width: 100%;
+    display: block;
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+  
+  .preview-indicator {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+  }
+  
+  .resize-preview-overlay {
+    display: none; /* Hide complex overlays on mobile */
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .form-field-preview--selected {
+    border-width: 3px;
+    border-color: #000;
+  }
+  
+  .form-field-preview--active-resize {
+    border-width: 3px;
+    border-color: #006400;
+  }
+  
+  .form-field-preview--affected {
+    border-width: 3px;
+    border-color: #ff8c00;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+.form-field-wrapper:focus-within .form-field-preview {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* GPU acceleration for smooth animations */
+.form-field-wrapper,
+.form-field-preview,
+.resize-preview-overlay {
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Contain layout changes during resize */
+.form-fields-container {
+  contain: layout style;
+}
+
+/* ========================================
+   DARK MODE SUPPORT
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .form-field-preview {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .form-field-preview--selected {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  }
+  
+  .form-field-preview--active-resize {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+    background: rgba(52, 211, 153, 0.05);
+  }
+  
+  .form-field-preview--affected {
+    border-color: #fbbf24;
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.1);
+    background: rgba(251, 191, 36, 0.05);
+  }
+  
+  .preview-indicator {
+    background: rgba(30, 41, 59, 0.95);
+    color: #e2e8f0;
+  }
+  
+  .resize-preview-content {
+    background: rgba(30, 41, 59, 0.95);
+    color: #e2e8f0;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY & PERFORMANCE ENHANCEMENTS
+   ======================================== */
+
+/* Focus management for keyboard navigation */
+.form-field-wrapper[tabindex]:focus {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+.form-field-wrapper[tabindex]:focus .field-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Screen reader announcements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .form-field-wrapper,
+  .field-drop-zone,
+  .row-drop-indicator,
+  .field-spacing-indicator,
+  .resize-preview-content,
+  .drop-position-indicator,
+  .field-intersection-indicator {
+    animation: none;
+    transition: none;
+  }
+  
+  .form-field-wrapper:hover {
+    transform: none;
+  }
+}
+
+/* GPU acceleration for smooth animations */
+.form-field-wrapper,
+.field-drop-zone,
+.resize-preview-content {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Container optimization */
+.form-fields-container {
+  contain: layout style;
+  transform: translateZ(0); /* Force GPU layer */
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .field-drop-zone--active {
+    border-width: 4px;
+    border-color: #000;
+  }
+  
+  .row-drop-indicator--active {
+    background: #000;
+    height: 4px;
+  }
+  
+  .field-spacing-indicator--active {
+    background: #000;
+    width: 4px;
+  }
+}
+
+/* ========================================
+   DARK MODE ENHANCEMENTS
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .form-fields-dropzone {
+    background: rgba(15, 23, 42, 0.5);
+    border-color: #475569;
+  }
+  
+  .form-fields-dropzone--drag-over {
+    border-color: #60a5fa;
+    background: rgba(96, 165, 250, 0.1);
+  }
+  
+  .form-fields-empty {
+    color: #94a3b8;
+  }
+  
+  .form-field-wrapper {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: #475569;
+  }
+  
+  .form-field-wrapper:hover {
+    border-color: rgba(96, 165, 250, 0.3);
+    background: rgba(30, 41, 59, 0.9);
+  }
+  
+  .field-drop-zone--active {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  }
+  
+  .row-drop-indicator--active {
+    background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%);
+  }
+  
+  .field-spacing-indicator--active {
+    background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+  }
+  
+  .resize-preview-content {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  }
+  
+  .size-comparison-overlay {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: #475569;
+    color: #e2e8f0;
+  }
+}
+
+/* ========================================
+   PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+/* Efficient repaints during drag operations */
+.form-builder--dragging * {
+  pointer-events: none;
+}
+
+.form-builder--dragging .form-field-wrapper,
+.form-builder--dragging .field-drop-zone,
+.form-builder--dragging .new-field-drop-zone {
+  pointer-events: auto;
+}
+
+/* Optimize scroll performance */
+.form-fields-dropzone {
+  transform: translateZ(0);
+  overflow-anchor: none;
+}
+
+/* Prevent layout thrashing during resize */
+.form-field-wrapper--resizing {
+  contain: layout;
+}
+
+/* Efficient transitions */
+.form-field-wrapper {
+  transition: 
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s ease;
+}
+
+/* Memory-efficient animations */
+@keyframes dropZonePulse {
+  0%, 100% { 
+    transform: scaleY(1); 
+  }
+  50% { 
+    transform: scaleY(1.05); 
+  }
+}
+
+@keyframes spacingPulse {
+  0%, 100% { 
+    transform: translateY(-50%) scale(1); 
+  }
+  50% { 
+    transform: translateY(-50%) scale(1.1); 
+  }
+}
+
+/* ========================================
+   DEBUGGING HELPERS (Development Only)
+   ======================================== */
+
+.debug-mode .form-field-wrapper::before {
+  content: attr(data-field-type) ' - ' attr(data-width);
+  position: absolute;
+  top: -1.5rem;
+  left: 0;
+  background: #1f2937;
+  color: white;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  z-index: 50;
+  opacity: 0.8;
+}
+
+.debug-mode .row-drop-indicator::after {
+  content: 'Row Drop Zone';
+  position: absolute;
+  right: 0;
+  top: -1rem;
+  font-size: 0.625rem;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.debug-mode .field-drop-zone::after {
+  content: 'Field Drop';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  font-size: 0.5rem;
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+/* End of FormBuilder Enhanced CSS */
+
+/* ========================================
+   ENHANCED DROP ZONES UX IMPROVEMENTS
+   ======================================== */
+
+/* Improved base drop zone styles with larger targets and better visual feedback */
+.drop-zone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px; /* Increased from original smaller sizes */
+  min-width: 80px; /* Larger click targets */
+  padding: 1rem;
+  margin: 0.5rem;
+  border: 3px dashed #cbd5e1;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #64748b;
+  font-weight: 500;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+/* Shimmer effect for enhanced visual appeal */
+.drop-zone::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(59, 130, 246, 0.15) 50%, 
+    transparent 100%
+  );
+  transition: left 0.8s ease;
+}
+
+/* Active state with enhanced visual feedback */
+.drop-zone:hover,
+.isDragging .drop-zone,
+.drop-zone--active {
+  opacity: 1;
+  transform: scale(1);
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #2563eb;
+  box-shadow: 
+    0 8px 25px rgba(59, 130, 246, 0.15),
+    0 0 0 4px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  animation: dropZoneActivePulse 2s infinite ease-in-out;
+}
+
+.drop-zone--active::before,
+.drop-zone:hover::before {
+  left: 100%;
+}
+
+@keyframes dropZoneActivePulse {
+  0%, 100% {
+    box-shadow: 
+      0 8px 25px rgba(59, 130, 246, 0.15),
+      0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 12px 35px rgba(59, 130, 246, 0.25),
+      0 0 0 8px rgba(59, 130, 246, 0.15);
+  }
+}
+
+/* Enhanced drop zone between fields - larger and more prominent */
+.drop-zone--between {
+  min-width: 60px; /* Increased from 30px */
+  min-height: 80px; /* Increased height for easier targeting */
+  margin: 0 0.75rem; /* Better spacing */
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #0ea5e9;
+  flex-shrink: 0;
+}
+
+.drop-zone--between:hover,
+.isDragging .drop-zone--between {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 
+    0 10px 30px rgba(14, 165, 233, 0.25),
+    0 0 0 4px rgba(14, 165, 233, 0.15);
+}
+
+/* Enhanced row start drop zone */
+.drop-zone--row-start {
+  min-width: 100px; /* Increased from 60px */
+  min-height: 70px;
+  margin-right: 1rem;
+  border-radius: 12px 8px 8px 12px; /* Rounded on the left */
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border-color: #10b981;
+}
+
+.drop-zone--row-start:hover,
+.isDragging .drop-zone--row-start {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  transform: scale(1.05) translateX(-5px);
+  box-shadow: 
+    0 10px 30px rgba(16, 185, 129, 0.25),
+    0 0 0 4px rgba(16, 185, 129, 0.15);
+}
+
+/* Enhanced row end drop zone */
+.drop-zone--row-end {
+  min-width: 100px; /* Increased from 60px */
+  min-height: 70px;
+  margin-left: 1rem;
+  border-radius: 8px 12px 12px 8px; /* Rounded on the right */
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #f59e0b;
+}
+
+.drop-zone--row-end:hover,
+.isDragging .drop-zone--row-end {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  transform: scale(1.05) translateX(5px);
+  box-shadow: 
+    0 10px 30px rgba(245, 158, 11, 0.25),
+    0 0 0 4px rgba(245, 158, 11, 0.15);
+}
+
+/* Enhanced new row drop zone - much larger and more prominent */
+.drop-zone--new-row {
+  width: 100%;
+  min-height: 100px; /* Increased from 60px */
+  margin: 1.5rem 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border-color: #8b5cf6;
+  position: relative;
+  overflow: hidden;
+}
+
+.drop-zone--new-row::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px dashed #8b5cf6;
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: rotateHint 3s linear infinite;
+}
+
+@keyframes rotateHint {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.drop-zone--new-row:hover,
+.isDragging .drop-zone--new-row {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  transform: scale(1.02);
+  box-shadow: 
+    0 15px 40px rgba(139, 92, 246, 0.25),
+    0 0 0 6px rgba(139, 92, 246, 0.15);
+}
+
+.drop-zone--new-row:hover::after {
+  border-color: white;
+  opacity: 0.6;
+}
+
+/* Enhanced drop zone content with better typography and icons */
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.drop-zone-content .icon {
+  transition: transform 0.3s ease;
+}
+
+.drop-zone:hover .drop-zone-content .icon {
+  transform: scale(1.2);
+}
+
+/* Enhanced empty drop zone for when form is empty */
+.empty-drop-zone {
+  width: 100%;
+  min-height: 320px; /* Increased height */
+  border: 3px dashed #cbd5e1;
+  border-radius: 20px; /* More rounded */
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.empty-drop-zone::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+  animation: rotateGradient 8s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes rotateGradient {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.empty-drop-zone:hover,
+.empty-drop-zone.sortable-ghost {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  transform: scale(1.01);
+  box-shadow: 
+    0 20px 50px rgba(59, 130, 246, 0.15),
+    0 0 0 6px rgba(59, 130, 246, 0.1);
+}
+
+.empty-drop-zone:hover::before {
+  opacity: 1;
+}
+
+/* Enhanced permanent new field drop zone */
+.new-field-drop-zone {
+  width: 100%;
+  min-height: 140px; /* Increased height */
+  border: 3px dashed #94a3b8;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.new-field-drop-zone::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    transparent 30%, 
+    rgba(94, 163, 184, 0.08) 50%, 
+    transparent 70%
+  );
+  animation: shimmerSlow 4s infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes shimmerSlow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.new-field-drop-zone:hover,
+.new-field-drop-zone.sortable-ghost {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 50px rgba(59, 130, 246, 0.15),
+    0 0 0 6px rgba(59, 130, 246, 0.1);
+}
+
+.new-field-drop-zone:hover::before {
+  opacity: 1;
+}
+
+/* Enhanced hint styles for better user guidance */
+.drop-zone-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  border: 2px solid #93c5fd;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+}
+
+.drop-zone-hint--active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-color: #1d4ed8;
+  animation: hintPulse 2s infinite;
+  transform: scale(1.05);
+  box-shadow: 
+    0 8px 25px rgba(59, 130, 246, 0.25),
+    0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+@keyframes hintPulse {
+  0%, 100% {
+    transform: scale(1.05);
+    box-shadow: 
+      0 8px 25px rgba(59, 130, 246, 0.25),
+      0 0 0 4px rgba(59, 130, 246, 0.15);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 
+      0 12px 35px rgba(59, 130, 246, 0.35),
+      0 0 0 8px rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* Enhanced dragging state visibility */
+.isDragging .drop-zone {
+  opacity: 1;
+  animation: breathingZone 2s infinite ease-in-out;
+}
+
+@keyframes breathingZone {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Enhanced responsive behavior */
+@media (max-width: 768px) {
+  .drop-zone {
+    min-height: 50px;
+    min-width: 60px;
+    padding: 0.75rem;
+    margin: 0.25rem;
+  }
+  
+  .drop-zone--between {
+    min-width: 40px;
+    min-height: 60px;
+  }
+  
+  .drop-zone--row-start,
+  .drop-zone--row-end {
+    min-width: 70px;
+    min-height: 50px;
+  }
+  
+  .drop-zone--new-row {
+    min-height: 80px;
+    margin: 1rem 0;
+  }
+  
+  .empty-drop-zone {
+    min-height: 250px;
+  }
+  
+  .new-field-drop-zone {
+    min-height: 100px;
+  }
+}
+
+/* Enhanced accessibility for better contrast */
+@media (prefers-contrast: high) {
+  .drop-zone {
+    border-width: 4px;
+    border-color: #000;
+    background: #fff;
+    color: #000;
+  }
+  
+  .drop-zone:hover,
+  .drop-zone--active {
+    background: #000;
+    color: #fff;
+    border-color: #fff;
+  }
+}
+
+/* Motion reduction for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .drop-zone,
+  .drop-zone::before,
+  .drop-zone-hint,
+  .empty-drop-zone,
+  .new-field-drop-zone {
+    animation: none;
+    transition: none;
+  }
+  
+  .drop-zone:hover,
+  .drop-zone--active {
+    transform: none;
+  }
+}
+
+/* ========================================
+   ENHANCED FIELD ROWS WITH IMPROVED DRAG & DROP
+   ======================================== */
+
+/* Enhanced field rows with better drag & drop integration */
+.field-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem; /* Increased spacing for better drop zones */
+  padding: 0.5rem;
+}
+
+.field-row {
+  display: flex;
+  align-items: stretch;
+  gap: 1rem; /* Increased gap for better drop zone placement */
+  min-height: 90px; /* Slightly increased for better proportions */
+  padding: 1rem;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: visible; /* Allow drop zones to extend outside */
+}
+
+.field-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.field-row:hover {
+  border-color: #cbd5e1;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.02);
+  transform: translateY(-1px);
+}
+
+.field-row:hover::before {
+  opacity: 1;
+}
+
+.field-row--drag-target {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 
+    0 8px 30px rgba(59, 130, 246, 0.15),
+    0 0 0 4px rgba(59, 130, 246, 0.1);
+  animation: dragTargetPulse 2s infinite ease-in-out;
+}
+
+.field-row--can-accept {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  box-shadow: 
+    0 8px 30px rgba(16, 185, 129, 0.15),
+    0 0 0 4px rgba(16, 185, 129, 0.1);
+  animation: canAcceptPulse 2s infinite ease-in-out;
+}
+
+@keyframes dragTargetPulse {
+  0%, 100% {
+    box-shadow: 
+      0 8px 30px rgba(59, 130, 246, 0.15),
+      0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 12px 40px rgba(59, 130, 246, 0.25),
+      0 0 0 8px rgba(59, 130, 246, 0.15);
+  }
+}
+
+@keyframes canAcceptPulse {
+  0%, 100% {
+    box-shadow: 
+      0 8px 30px rgba(16, 185, 129, 0.15),
+      0 0 0 4px rgba(16, 185, 129, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 12px 40px rgba(16, 185, 129, 0.25),
+      0 0 0 8px rgba(16, 185, 129, 0.15);
+  }
+}
+
+/* Enhanced field row states during drag operations */
+.field-row--has-space {
+  border-style: dashed;
+  border-color: #94a3b8;
+}
+
+.isDragging .field-row--has-space {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+}
+
+/* Improved row fields container for better spacing */
+.row-fields-container {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 1rem !important; /* Increased gap for drop zones */
+  align-items: stretch !important;
+  width: 100% !important;
+  min-height: 70px !important;
+  position: relative;
+}
+
+/* Enhanced row info display during drag operations */
+.row-info {
+  position: absolute;
+  top: -2rem;
+  right: 0;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+  z-index: 20;
+}
+
+.isDragging .row-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.row-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Courier New', monospace;
+}
+
+/* Enhanced permanent drop zone styling */
+.permanent-drop-zone {
+  margin-top: auto;
+  padding-top: 2rem;
+  flex-shrink: 0;
+}
+
+/* Enhanced new field content styling */
+.new-field-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #64748b;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.new-field-content p {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Enhanced intelligent rows container */
+.intelligent-rows-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+  gap: 0.5rem;
+}
+
+/* Enhanced empty content styling */
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 400px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.empty-content h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0;
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.empty-content p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Enhanced responsive design for field rows */
+@media (max-width: 768px) {
+  .field-rows {
+    gap: 1rem;
+    padding: 0.25rem;
+  }
+  
+  .field-row {
+    gap: 0.75rem;
+    min-height: 70px;
+    padding: 0.75rem;
+    flex-direction: column;
+  }
+  
+  .row-fields-container {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  .row-info {
+    position: static;
+    margin-top: 0.5rem;
+    align-self: flex-end;
+  }
+  
+  .intelligent-rows-container {
+    padding: 0.5rem;
+  }
+  
+  .permanent-drop-zone {
+    padding-top: 1rem;
+  }
+}
+
+/* Enhanced dragging class for better feedback */
+.isDragging {
+  user-select: none;
+}
+
+.isDragging .field-row {
+  transition: all 0.2s ease;
+}
+
+.isDragging .drop-zone {
+  animation: breathingZone 2s infinite ease-in-out;
+}
+
+/* Enhanced focus management for accessibility */
+.field-row:focus-within {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+/* Enhanced visual hierarchy during drag operations */
+.isDragging .form-fields-container {
+  background: 
+    radial-gradient(circle at center, rgba(59, 130, 246, 0.02) 0%, transparent 50%),
+    linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.isDragging .field-row:not(.field-row--can-accept):not(.field-row--drag-target) {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
+/* Enhanced ghost styling for better drag feedback */
+.field-ghost {
+  opacity: 0.6 !important;
+  transform: rotate(5deg) scale(1.05) !important;
+  border: 2px dashed #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  box-shadow: 
+    0 15px 35px rgba(59, 130, 246, 0.25),
+    0 5px 15px rgba(59, 130, 246, 0.15) !important;
+}
+
+.field-chosen {
+  transform: scale(1.02) !important;
+  z-index: 1000 !important;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 8px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.field-drag {
+  opacity: 0.8 !important;
+  transform: rotate(8deg) scale(1.1) !important;
+  z-index: 1001 !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25) !important;
+}
