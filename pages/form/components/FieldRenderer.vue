@@ -1,21 +1,30 @@
 <template>
-  <div class="field-renderer">
-    <div class="field-header">
-      <label class="field-label">
+  <div v-if="isVisible" class="field-renderer" :class="[field.class, field.width || 'full', { preview: isPreview }]">
+    <div class="field-header" v-if="showLabels !== false">
+      <label class="field-label" :for="field.id">
+        <span v-if="field.icon" class="field-icon">
+          <Icon :name="field.icon" />
+        </span>
         {{ field.label }}
         <span v-if="field.validation?.required || field.required" class="required">*</span>
       </label>
       <div v-if="isBuilder" class="field-actions">
-        <button @click="$emit('duplicate')" class="action-btn">
+        <button @click="emit('click', field.id)" class="action-btn edit">
+          <Icon name="i-heroicons-pencil" />
+        </button>
+        <button @click="emit('duplicate', field.id)" class="action-btn">
           <Icon name="i-heroicons-document-duplicate" />
         </button>
-        <button @click="$emit('delete')" class="action-btn delete">
+        <button @click="emit('delete', field.id)" class="action-btn delete">
           <Icon name="i-heroicons-trash" />
         </button>
       </div>
     </div>
 
-    <div class="field-input">
+    <div class="field-input-wrapper">
+      <span v-if="field.prefix" class="field-affix prefix">{{ field.prefix }}</span>
+      
+      <div class="field-input">
       <!-- Input de base -->
       <input
         v-if="['text', 'email', 'password', 'number', 'tel', 'url'].includes(field.type)"
@@ -144,6 +153,9 @@
         class="form-range"
       />
     </div>
+      
+      <span v-if="field.suffix" class="field-affix suffix">{{ field.suffix }}</span>
+    </div>
 
     <div v-if="field.helpText" class="field-help">
       {{ field.helpText }}
@@ -152,23 +164,104 @@
 </template>
 
 <script setup lang="ts">
-import type { FormField } from '../types/form'
+import { computed } from 'vue'
+import type { FormFieldData, ConditionalLogic } from '../../../types/form'
 
-defineProps<{
-  field: FormField
+interface Props {
+  field: FormFieldData
   isBuilder?: boolean
+  isPreview?: boolean
+  formValues?: Record<string, any>
+  showLabels?: boolean
+    conditionalLogic?: {
+      enabled: boolean
+      action: 'show' | 'hide'
+      logicalOperator: 'AND' | 'OR'
+      rules: Array<{
+        fieldId: string
+        operator: string
+        value: any
+      }>
+    }
+  }
+ 
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  update: [fieldId: string, value: any]
+  delete: [fieldId: string]
+  duplicate: [fieldId: string]
+  click: [fieldId: string]
 }>()
 
-defineEmits<{
-  update: [data: Partial<FormField>]
-  delete: []
-  duplicate: []
-}>()
+// Détermine si le champ devrait être affiché en fonction de sa logique conditionnelle
+const isVisible = computed(() => {
+  if (!props.field.conditionalLogic?.enabled || !props.formValues) {
+    return true
+  }
+  
+  const { conditionalLogic } = props.field
+  const { rules, action, logicalOperator } = conditionalLogic
+  
+  if (!rules || rules.length === 0) {
+    return true
+  }
+  
+  const results = rules.map((rule) => {
+    // S'assurer que formValues existe
+    const fieldValue = props.formValues?.[rule.targetFieldId]
+    
+    switch (rule.operator) {
+      case 'equals':
+        return fieldValue === rule.value
+      case 'not_equals':
+        return fieldValue !== rule.value
+      case 'contains':
+        return String(fieldValue || '').includes(String(rule.value || ''))
+      case 'not_contains':
+        return !String(fieldValue || '').includes(String(rule.value || ''))
+      case 'empty':
+        return !fieldValue || (Array.isArray(fieldValue) && fieldValue.length === 0)
+      case 'not_empty':
+        return !!fieldValue && (!Array.isArray(fieldValue) || fieldValue.length > 0)
+      case 'greater_than':
+        return Number(fieldValue) > Number(rule.value)
+      case 'less_than':
+        return Number(fieldValue) < Number(rule.value)
+      default:
+        return true
+    }
+  })
+  
+  const conditionMet = logicalOperator === 'AND' 
+    ? results.every(Boolean) 
+    : results.some(Boolean)
+  
+  return action === 'show' ? conditionMet : !conditionMet
+})
 </script>
 
 <style scoped>
 .field-renderer {
   width: 100%;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.field-renderer.half {
+  width: 48%;
+  display: inline-block;
+}
+
+.field-renderer.third {
+  width: 32%;
+  display: inline-block;
+}
+
+.field-renderer.preview {
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 .field-header {
@@ -182,6 +275,16 @@ defineEmits<{
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
 }
 
 .required {
@@ -208,13 +311,43 @@ defineEmits<{
   background: #f3f4f6;
 }
 
+.action-btn.edit:hover {
+  background: #eef6ff;
+  color: #3b82f6;
+}
+
 .action-btn.delete:hover {
   background: #fef2f2;
   color: #ef4444;
 }
 
-.field-input {
+.field-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
   margin-bottom: 0.5rem;
+}
+
+.field-affix {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  color: #6b7280;
+  user-select: none;
+  pointer-events: none;
+}
+
+.field-affix.prefix {
+  left: 0.75rem;
+}
+
+.field-affix.suffix {
+  right: 0.75rem;
+}
+
+.field-input {
+  flex: 1;
 }
 
 .form-input,

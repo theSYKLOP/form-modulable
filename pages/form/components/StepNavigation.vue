@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FormStep } from '../types/form'
+import type { FormStep } from '../../../types/form'
 
 defineProps<{
   steps: FormStep[]

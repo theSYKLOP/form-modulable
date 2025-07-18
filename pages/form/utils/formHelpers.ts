@@ -1,4 +1,4 @@
-import type { FormField, FormStep, FormConfig, FieldValidation } from '../types/form'
+import type { FormField, FormStep, FormConfig, FieldValidation } from '../../../types/form'
 
 /**
  * Génère un ID unique pour les formulaires, étapes et champs

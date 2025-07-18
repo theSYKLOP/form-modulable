@@ -42,38 +42,85 @@
             </div>
           </div>
 
-          <!-- Grille des champs -->
+          <!-- Grille des champs avec support des largeurs -->
           <div v-else class="fields-grid">
-            <div 
-              v-for="field in sortedFields" 
-              :key="field.id"
-              class="field-wrapper"
-              :class="{ 'selected': selectedFieldId === field.id }"
-              @click="selectedFieldId = field.id"
-            >
-              <FieldRenderer 
-                :field="field"
-                :is-builder="true"
-                @update="updateField(field.id, $event)"
-                @delete="deleteField(field.id)"
-                @duplicate="duplicateField(field.id)"
-              />
-              
-              <!-- Bouton + entre les champs avec animation -->
-              <div 
-                v-if="field.order < activeStep.fields.length - 1"
-                class="field-divider"
-                @mouseenter="showAddButton($event)"
-                @mouseleave="hideAddButton($event)"
+            <!-- Organisation des champs en rangées selon leur largeur -->
+            <div class="fields-row">
+              <div
+                v-for="(field, fieldIndex) in sortedFields"
+                :key="field.id"
+                :class="['field-container', field.width || 'full']"
               >
-                <div class="divider-line"></div>
-                <button 
-                  class="add-field-between"
-                  @click="openFieldModalAtPosition(field.order + 1)"
-                  title="Insérer un champ ici"
+                <div
+                  class="field-wrapper"
+                  :class="{ 
+                    'selected': selectedFieldId === field.id,
+                    'hover': hoveredFieldId === field.id 
+                  }"
+                  @click="selectField(field.id)"
+                  @dblclick="editField(field)"
+                  @mouseenter="hoveredFieldId = field.id"
+                  @mouseleave="hoveredFieldId = null"
                 >
-                  <Icon name="i-heroicons-plus" />
-                </button>
+                  <!-- Boutons d'action du champ -->
+                  <div 
+                    v-if="selectedFieldId === field.id || hoveredFieldId === field.id" 
+                    class="field-actions"
+                  >
+                    <button 
+                      @click.stop="editField(field)"
+                      class="field-action-btn edit"
+                      title="Modifier le champ (double-clic)"
+                    >
+                      <Icon name="i-heroicons-pencil" />
+                    </button>
+                    <button 
+                      @click.stop="duplicateField(field.id)"
+                      class="field-action-btn duplicate"
+                      title="Dupliquer le champ"
+                    >
+                      <Icon name="i-heroicons-document-duplicate" />
+                    </button>
+                    <button 
+                      @click.stop="confirmDeleteField(field)"
+                      class="field-action-btn delete"
+                      title="Supprimer le champ"
+                    >
+                      <Icon name="i-heroicons-trash" />
+                    </button>
+                  </div>
+
+                  <!-- Indicateur de sélection -->
+                  <div 
+                    v-if="selectedFieldId === field.id" 
+                    class="selection-indicator"
+                  >
+                    <Icon name="i-heroicons-cursor-arrow-rays" />
+                  </div>
+
+                  <FieldRenderer 
+                    :field="field"
+                    :is-builder="true"
+                    @update="handleFieldUpdate(field.id, $event)"
+                  />
+                </div>
+                
+                <!-- Bouton + entre les champs avec animation -->
+                <div 
+                  v-if="fieldIndex < sortedFields.length - 1"
+                  class="field-divider"
+                  @mouseenter="showAddButton($event)"
+                  @mouseleave="hideAddButton($event)"
+                >
+                  <div class="divider-line"></div>
+                  <button 
+                    class="add-field-between"
+                    @click="openFieldModalAtPosition(field.order + 1)"
+                    title="Insérer un champ ici"
+                  >
+                    <Icon name="i-heroicons-plus" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -100,14 +147,46 @@
 
     <!-- Modal -->
     <FieldModal 
-      :is-open="isModalOpen"
+      :isOpen="isModalOpen"
       :type="modalType"
-      :editing-step-id="editingStepId"
+      :field="editingField"
       :insert-position="insertPosition"
       @close="closeModal"
-      @add-field="handleAddField"
-      @update-step="handleUpdateStep"
+      @addField="handleAddField"
+      @updateField="handleUpdateField"
     />
+    
+    <!-- Modal pour les étapes -->
+    <StepModal 
+      v-if="modalType === 'step'"
+      :isOpen="isModalOpen"
+      :step="editingStep"
+      @close="closeModal"
+      @save="handleUpdateStep"
+    />
+
+    <!-- Modal de confirmation de suppression -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click="cancelDelete">
+      <div class="delete-modal" @click.stop>
+        <div class="delete-modal-header">
+          <Icon name="i-heroicons-exclamation-triangle" class="warning-icon" />
+          <h3>Supprimer le champ</h3>
+        </div>
+        <div class="delete-modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer le champ <strong>"{{ fieldToDelete?.label }}"</strong> ?</p>
+          <p class="warning-text">Cette action est irréversible.</p>
+        </div>
+        <div class="delete-modal-footer">
+          <button @click="cancelDelete" class="cancel-btn">
+            Annuler
+          </button>
+          <button @click="confirmDelete" class="delete-btn">
+            <Icon name="i-heroicons-trash" />
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -117,6 +196,8 @@ import { useFormBuilder } from '../composables/useFormBuilder'
 import StepNavigation from './StepNavigation.vue'
 import FieldRenderer from './FieldRenderer.vue'
 import FieldModal from './FieldModal.vue'
+import StepModal from './StepModal.vue'
+import type { FormField, FormFieldData } from '../../../types/form'
 
 const {
   formConfig,
@@ -136,11 +217,23 @@ const {
 const isModalOpen = ref(false)
 const modalType = ref<'step' | 'field'>('field')
 const editingStepId = ref<string | null>(null)
+const editingStep = ref<any>(null)
+const editingField = ref<FormField | null>(null)
 const insertPosition = ref<number | null>(null)
+
+// État pour les interactions UI
+const hoveredFieldId = ref<string | null>(null)
+const showDeleteModal = ref(false)
+const fieldToDelete = ref<FormField | null>(null)
 
 const sortedFields = computed(() => {
   return activeStep.value?.fields.sort((a, b) => a.order - b.order) || []
 })
+
+// Fonction pour sélectionner un champ (simple clic)
+const selectField = (fieldId: string) => {
+  selectedFieldId.value = selectedFieldId.value === fieldId ? null : fieldId
+}
 
 const showAddButton = (event: MouseEvent) => {
   const target = event.currentTarget as HTMLElement
@@ -161,47 +254,118 @@ const hideAddButton = (event: MouseEvent) => {
 // Fonctions pour gérer le modal
 const openModal = (type: 'step' | 'field', stepId?: string) => {
   modalType.value = type
-  editingStepId.value = stepId || null
+  
+  if (type === 'step' && stepId) {
+    editingStepId.value = stepId
+    editingStep.value = formConfig.value.steps.find(s => s.id === stepId)
+  } else {
+    editingStepId.value = null
+    editingStep.value = null
+    editingField.value = null
+  }
+  
   isModalOpen.value = true
 }
 
 const closeModal = () => {
   isModalOpen.value = false
   editingStepId.value = null
+  editingStep.value = null
+  editingField.value = null
   insertPosition.value = null
 }
 
 // Fonction pour ouvrir le modal de champ
 const openFieldModal = () => {
   insertPosition.value = null
+  editingField.value = null
   openModal('field')
 }
 
 // Fonction pour ouvrir le modal à une position spécifique
 const openFieldModalAtPosition = (position: number) => {
   insertPosition.value = position
+  editingField.value = null
   openModal('field')
 }
 
-// Fonction pour gérer l'ajout d'un champ
-const handleAddField = (field: any) => {
-  if (insertPosition.value !== null) {
-    // Ajouter le champ à la position spécifiée
-    addFieldAtPosition(field, insertPosition.value)
-    insertPosition.value = null
-  } else {
-    // Ajouter le champ à la fin
-    addField(field)
+// Fonction wrapper pour gérer les mises à jour de champs
+const handleFieldUpdate = (fieldId: string, value: string) => {
+  // Convertir la string en objet partiel FormField
+  updateField(fieldId, { defaultValue: value } as Partial<FormField>)
+}
+
+// Fonction pour éditer un champ existant (double-clic)
+const editField = (field: FormField) => {
+  editingField.value = field
+  insertPosition.value = null
+  modalType.value = 'field'
+  isModalOpen.value = true
+}
+
+// Fonction pour confirmer la suppression d'un champ
+const confirmDeleteField = (field: FormField) => {
+  fieldToDelete.value = field
+  showDeleteModal.value = true
+}
+
+// Fonction pour annuler la suppression
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  fieldToDelete.value = null
+}
+
+// Fonction pour confirmer et effectuer la suppression
+const confirmDelete = () => {
+  if (fieldToDelete.value) {
+    deleteField(fieldToDelete.value.id)
+    showDeleteModal.value = false
+    fieldToDelete.value = null
   }
+}
+
+// Fonction pour ajouter un nouveau champ
+const handleAddField = (fieldData: Partial<FormFieldData>) => {
+  console.log('🚀 Adding field:', fieldData)
+  
+  if (insertPosition.value !== null) {
+    // Mode insertion - create complete FormField object
+    const newField: FormField = {
+      id: `field_${Date.now()}`,
+      stepId: activeStep.value?.id || '',
+      order: insertPosition.value,
+      ...fieldData
+    } as FormField
+    
+    addFieldAtPosition(newField, insertPosition.value)
+  } else {
+    // Mode ajout normal
+    const newField: FormField = {
+      id: `field_${Date.now()}`,
+      stepId: activeStep.value?.id || '',
+      order: activeStep.value?.fields.length || 0,
+      ...fieldData
+    } as FormField
+    
+    addField(newField)
+    selectedFieldId.value = newField.id
+  }
+  
+  closeModal()
+}
+
+const handleUpdateField = (fieldId: string, fieldData: Partial<FormFieldData>) => {
+  console.log('🔄 Updating field:', fieldId, fieldData)
+  updateField(fieldId, fieldData as Partial<FormField>)
   closeModal()
 }
 
 // Fonction pour ajouter un champ à une position spécifique
-const addFieldAtPosition = (field: any, position: number) => {
+const addFieldAtPosition = (fieldData: FormField, position: number) => {
   if (!activeStep.value) return
   
-  const newField = {
-    ...field,
+  const newField: FormField = {
+    ...fieldData,
     id: `field_${Date.now()}`,
     stepId: activeStep.value.id,
     order: position
@@ -227,8 +391,11 @@ const addFieldAtPosition = (field: any, position: number) => {
 }
 
 // Fonction pour gérer la modification d'étape
-const handleUpdateStep = (stepId: string, title: string) => {
-  updateStepTitle(stepId, title)
+const handleUpdateStep = (stepData: { title: string; description?: string }) => {
+  if (editingStepId.value) {
+    updateStepTitle(editingStepId.value, stepData.title)
+    // Vous pouvez aussi mettre à jour la description si nécessaire
+  }
   closeModal()
 }
 </script>
@@ -325,11 +492,51 @@ const handleUpdateStep = (stepId: string, title: string) => {
   line-height: 1.5;
 }
 
-/* Grille des champs */
+/* Grille des champs - Responsive avec support des largeurs */
 .fields-grid {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+/* Container des champs avec gestion des largeurs */
+.fields-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+/* Différentes largeurs de champs */
+.field-container {
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.field-container.full {
+  width: 100%;
+}
+
+.field-container.half {
+  width: calc(50% - 0.5rem);
+}
+
+.field-container.third {
+  width: calc(33.333% - 0.667rem);
+}
+
+.field-container.quarter {
+  width: calc(25% - 0.75rem);
+}
+
+/* Styles responsifs pour les largeurs */
+@media (max-width: 768px) {
+  .field-container.half, 
+  .field-container.third,
+  .field-container.quarter {
+    width: 100%;
+  }
 }
 
 .field-wrapper {
@@ -340,9 +547,11 @@ const handleUpdateStep = (stepId: string, title: string) => {
   cursor: pointer;
   transition: all 0.2s ease;
   background: #fafbfc;
+  height: 100%;
 }
 
-.field-wrapper:hover {
+.field-wrapper:hover,
+.field-wrapper.hover {
   border-color: #e5e7eb;
   background: #f9fafb;
   transform: translateY(-1px);
@@ -355,14 +564,94 @@ const handleUpdateStep = (stepId: string, title: string) => {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* Actions du champ */
+.field-actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.field-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+}
+
+.field-action-btn.edit {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.field-action-btn.edit:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.field-action-btn.duplicate {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.field-action-btn.duplicate:hover {
+  background: #16a34a;
+  color: white;
+}
+
+.field-action-btn.delete {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.field-action-btn.delete:hover {
+  background: #dc2626;
+  color: white;
+}
+
+/* Indicateur de sélection */
+.selection-indicator {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  z-index: 5;
+}
+
 /* Diviseurs entre champs */
 .field-divider {
-  position: relative;
+  position: absolute;
+  bottom: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   height: 3rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0.5rem 0;
+  width: 100%;
+  z-index: 10;
 }
 
 .divider-line {
@@ -370,7 +659,7 @@ const handleUpdateStep = (stepId: string, title: string) => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 100%;
+  width: 80%;
   height: 2px;
   background: linear-gradient(to right, transparent, #e5e7eb 20%, #e5e7eb 80%, transparent);
   z-index: 1;
@@ -490,6 +779,105 @@ const handleUpdateStep = (stepId: string, title: string) => {
   transform: translateY(0);
 }
 
+/* Modal de confirmation de suppression */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.delete-modal {
+  background: white;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.delete-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.warning-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #f59e0b;
+}
+
+.delete-modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.delete-modal-body {
+  padding: 1.5rem;
+}
+
+.delete-modal-body p {
+  margin: 0 0 0.5rem 0;
+  color: #374151;
+}
+
+.warning-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.delete-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid #f3f4f6;
+  background: #fafbfc;
+}
+
+.cancel-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: #dc2626;
+  color: white;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #b91c1c;
+}
+
 /* Animations au survol */
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
@@ -523,11 +911,18 @@ const handleUpdateStep = (stepId: string, title: string) => {
   .fields-container {
     min-height: 250px;
   }
+
+  .field-actions {
+    position: static;
+    margin-top: 0.5rem;
+    justify-content: center;
+  }
 }
 
 /* Accessibilité */
 .add-field-btn:focus,
-.add-field-between:focus {
+.add-field-between:focus,
+.field-action-btn:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }

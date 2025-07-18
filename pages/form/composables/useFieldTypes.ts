@@ -1,4 +1,4 @@
-import type { FieldTemplate } from '../types/form'
+import type { FieldTemplate } from '../../../types/form'
 
 export function useFieldTypes() {
   const fieldTemplates: FieldTemplate[] = [

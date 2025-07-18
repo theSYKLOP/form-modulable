@@ -1,16 +1,32 @@
-export interface FormField {
+export type FieldWidth = 'full' | 'half' | 'third' | 'quarter';
+export type FieldPosition = 'default' | 'left' | 'right' | 'center';
+
+export interface FormFieldData {
   id: string
+  name: string
   type: FormFieldType
   label: string
   placeholder?: string
   helpText?: string
   defaultValue?: any
   validation?: FieldValidation
-  options?: FieldOption[]
-  width?: 'full' | 'half' | 'third'
+  options?: FormFieldOption[]
+  width?: FieldWidth
   order: number
   stepId: string
   required?: boolean
+  disabled?: boolean
+  readonly?: boolean
+  class?: string
+  icon?: string
+  prefix?: string
+  suffix?: string
+  
+  // Support pour la logique conditionnelle
+  conditionalLogic?: ConditionalLogic | null
+  
+  // Configuration API
+  hasApi?: boolean
   apiConfig?: ApiConfig
   
   // Propriétés spécifiques aux champs
@@ -20,7 +36,11 @@ export interface FormField {
   step?: number       // Pour number, range
   multiple?: boolean  // Pour file, select
   rows?: number       // Pour textarea
+  position?: FieldPosition
 }
+
+// Pour rétrocompatibilité
+export interface FormField extends FormFieldData {}
 
 // ...existing code...
 
@@ -58,15 +78,22 @@ export interface FieldTemplate {
 export interface ApiConfig {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   endpoint: string
+  responsePath?: string
+  labelKey?: string
+  valueKey?: string
+  cacheTime?: number
   headers?: Record<string, string>
   params?: Record<string, any>
 }
 
-export interface FieldOption {
+export interface FormFieldOption {
   label: string
   value: string | number
   disabled?: boolean
 }
+
+// Pour rétrocompatibilité
+export interface FieldOption extends FormFieldOption {}
 
 export interface FieldValidation {
   required?: boolean
@@ -76,4 +103,17 @@ export interface FieldValidation {
   max?: number
   pattern?: string
   email?: boolean
+}
+
+export interface ConditionalRule {
+  targetFieldId: string
+  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'empty' | 'not_empty' | 'greater_than' | 'less_than'
+  value: any
+}
+
+export interface ConditionalLogic {
+  enabled: boolean
+  action: 'show' | 'hide' | 'require' | 'disable'
+  logicalOperator: 'AND' | 'OR'
+  rules: ConditionalRule[]
 }
