@@ -218,6 +218,7 @@ export const cleanFormConfig = (config: FormConfig): FormConfig => {
       fields: step.fields.map(field => {
         const cleanField: FormField = {
           id: field.id,
+          name: field.name,
           type: field.type,
           label: field.label,
           stepId: field.stepId,

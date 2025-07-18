@@ -2,28 +2,29 @@
   <div class="form-canvas">
     <!-- Navigation des étapes -->
     <StepNavigation 
-      :steps="formConfig.steps"
-      :active-index="activeStepIndex"
-      @stepClick="activeStepIndex = $event"
-      @stepAdd="addStep"
-      @stepDelete="deleteStep"
+      v-if="props.formConfig?.steps"
+      :steps="props.formConfig.steps"
+      :active-index="props.activeStepIndex"
+      @stepClick="(index: number) => emit('step-click', index)"
+      @stepAdd="() => emit('add-step')"
+      @stepDelete="(stepId: string) => emit('delete-step', stepId)"
       @stepEdit="openModal('step', $event)"
     />
 
     <!-- Zone de création -->
     <div class="canvas-area">
-      <div v-if="activeStep" class="step-container">
+      <div v-if="props.activeStep" class="step-container">
         <div class="step-header">
-          <h2 class="step-title">{{ activeStep.title }}</h2>
-          <p v-if="activeStep.description" class="step-description">
-            {{ activeStep.description }}
+          <h2 class="step-title">{{ props.activeStep.title }}</h2>
+          <p v-if="props.activeStep.description" class="step-description">
+            {{ props.activeStep.description }}
           </p>
         </div>
 
         <!-- Champs de l'étape -->
         <div class="fields-container">
           <!-- État vide avec design amélioré -->
-          <div v-if="activeStep.fields.length === 0" class="empty-step">
+          <div v-if="props.activeStep.fields.length === 0" class="empty-step">
             <div class="empty-content">
               <div class="empty-icon-container">
                 <Icon name="i-heroicons-document-plus" class="empty-icon" />
@@ -54,7 +55,7 @@
                 <div
                   class="field-wrapper"
                   :class="{ 
-                    'selected': selectedFieldId === field.id,
+                    'selected': props.selectedFieldId === field.id,
                     'hover': hoveredFieldId === field.id 
                   }"
                   @click="selectField(field.id)"
@@ -64,7 +65,7 @@
                 >
                   <!-- Boutons d'action du champ -->
                   <div 
-                    v-if="selectedFieldId === field.id || hoveredFieldId === field.id" 
+                    v-if="props.selectedFieldId === field.id || hoveredFieldId === field.id" 
                     class="field-actions"
                   >
                     <button 
@@ -75,7 +76,7 @@
                       <Icon name="i-heroicons-pencil" />
                     </button>
                     <button 
-                      @click.stop="duplicateField(field.id)"
+                      @click.stop="() => emit('duplicate-field', field.id)"
                       class="field-action-btn duplicate"
                       title="Dupliquer le champ"
                     >
@@ -92,17 +93,61 @@
 
                   <!-- Indicateur de sélection -->
                   <div 
-                    v-if="selectedFieldId === field.id" 
+                    v-if="props.selectedFieldId === field.id" 
                     class="selection-indicator"
                   >
                     <Icon name="i-heroicons-cursor-arrow-rays" />
                   </div>
 
-                  <FieldRenderer 
-                    :field="field"
-                    :is-builder="true"
-                    @update="handleFieldUpdate(field.id, $event)"
-                  />
+                  <!-- 🆕 En-tête du champ avec label et description -->
+                  <div class="field-header">
+                    <div class="field-label-section">
+                      <h4 class="field-label">
+                        {{ field.label || 'Sans label' }}
+                        <span v-if="field.required" class="required-indicator">*</span>
+                      </h4>
+                      <p v-if="field.placeholder" class="field-description">
+                        {{ field.placeholder }}
+                      </p>
+                    </div>
+                    
+                    <!-- Badge du type de champ -->
+                    <div class="field-type-badge">
+                      <Icon :name="getFieldTypeIcon(field.type)" class="field-type-icon" />
+                      <span class="field-type-text">{{ getFieldTypeLabel(field.type) }}</span>
+                    </div>
+                  </div>
+
+                  <!-- 🆕 Contenu du champ avec FieldRenderer -->
+                  <div class="field-content">
+                    <FieldRenderer 
+                      :field="field"
+                      :is-builder="true"
+                      @update="handleFieldUpdate(field.id, $event)"
+                    />
+                  </div>
+
+                  <!-- 🆕 Informations supplémentaires du champ -->
+                  <div v-if="hasFieldDetails(field)" class="field-details">
+                    <!-- <div v-if="field.placeholder" class="field-detail">
+                      <Icon name="i-heroicons-chat-bubble-left-ellipsis" class="detail-icon" />
+                      <span class="detail-text">Placeholder: "{{ field.placeholder }}"</span>
+                    </div> -->
+                    <div v-if="field.defaultValue" class="field-detail">
+                      <Icon name="i-heroicons-document-text" class="detail-icon" />
+                      <span class="detail-text">Valeur par défaut: "{{ field.defaultValue }}"</span>
+                    </div>
+                    <div v-if="field.validation?.min || field.validation?.max" class="field-detail">
+                      <Icon name="i-heroicons-scale" class="detail-icon" />
+                      <span class="detail-text">
+                        Limites: {{ field.validation?.min || 0 }} - {{ field.validation?.max || '∞' }}
+                      </span>
+                    </div>
+                    <div v-if="field.validation?.pattern" class="field-detail">
+                      <Icon name="i-heroicons-shield-check" class="detail-icon" />
+                      <span class="detail-text">Format validé</span>
+                    </div>
+                  </div>
                 </div>
                 
                 <!-- Bouton + entre les champs avec animation -->
@@ -127,7 +172,7 @@
 
           <!-- Bouton + en fin d'étape avec design amélioré -->
           <div 
-            v-if="activeStep.fields.length > 0"
+            v-if="props.activeStep.fields.length > 0"
             class="add-field-end"
             @mouseenter="showAddButton($event)"
             @mouseleave="hideAddButton($event)"
@@ -192,28 +237,36 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useFormBuilder } from '../composables/useFormBuilder'
 import StepNavigation from './StepNavigation.vue'
 import FieldRenderer from './FieldRenderer.vue'
 import FieldModal from './FieldModal.vue'
 import StepModal from './StepModal.vue'
-import type { FormField, FormFieldData } from '../../../types/form'
+import type { FormConfig, FormStep, FormField, FormFieldData } from '../../../types/form'
 
-const {
-  formConfig,
-  activeStepIndex,
-  selectedFieldId,
-  activeStep,
-  addStep,
-  deleteStep,
-  updateStepTitle,
-  addField,
-  updateField,
-  deleteField,
-  duplicateField
-} = useFormBuilder()
+// Props reçus du parent
+interface Props {
+  formConfig: FormConfig
+  activeStepIndex: number
+  activeStep: FormStep
+  selectedFieldId: string | null
+}
 
-// État local pour le modal - TOUJOURS local au composant
+const props = defineProps<Props>()
+
+// Émissions vers le parent
+const emit = defineEmits<{
+  'update-step-title': [stepId: string, title: string]
+  'add-step': []
+  'delete-step': [stepId: string]
+  'add-field': [field: FormField]
+  'update-field': [fieldId: string, data: Partial<FormField>]
+  'delete-field': [fieldId: string]
+  'duplicate-field': [fieldId: string]
+  'select-field': [fieldId: string | null]
+  'step-click': [index: number]
+}>()
+
+// État local uniquement pour l'UI du composant
 const isModalOpen = ref(false)
 const modalType = ref<'step' | 'field'>('field')
 const editingStepId = ref<string | null>(null)
@@ -227,12 +280,66 @@ const showDeleteModal = ref(false)
 const fieldToDelete = ref<FormField | null>(null)
 
 const sortedFields = computed(() => {
-  return activeStep.value?.fields.sort((a, b) => a.order - b.order) || []
+  return props.activeStep?.fields.sort((a, b) => a.order - b.order) || []
 })
+
+// 🆕 Fonction pour obtenir l'icône du type de champ
+const getFieldTypeIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    'INPUT': 'i-heroicons-pencil-square',
+    'TEXTAREA': 'i-heroicons-document-text',
+    'SELECT': 'i-heroicons-chevron-down',
+    'RADIO': 'i-heroicons-radio',
+    'CHECKBOX': 'i-heroicons-check-circle',
+    'EMAIL': 'i-heroicons-at-symbol',
+    'PASSWORD': 'i-heroicons-lock-closed',
+    'NUMBER': 'i-heroicons-hashtag',
+    'DATE': 'i-heroicons-calendar-days',
+    'TIME': 'i-heroicons-clock',
+    'FILE': 'i-heroicons-document-arrow-up',
+    'TEL': 'i-heroicons-phone',
+    'URL': 'i-heroicons-link',
+    'RATING': 'i-heroicons-star',
+    'SLIDER': 'i-heroicons-adjustments-horizontal'
+  }
+  return icons[type] || 'i-heroicons-question-mark-circle'
+}
+
+// 🆕 Fonction pour obtenir le label du type de champ
+const getFieldTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    'INPUT': 'Texte',
+    'TEXTAREA': 'Zone de texte',
+    'SELECT': 'Liste déroulante',
+    'RADIO': 'Boutons radio',
+    'CHECKBOX': 'Cases à cocher',
+    'EMAIL': 'Email',
+    'PASSWORD': 'Mot de passe',
+    'NUMBER': 'Nombre',
+    'DATE': 'Date',
+    'TIME': 'Heure',
+    'FILE': 'Fichier',
+    'TEL': 'Téléphone',
+    'URL': 'URL',
+    'RATING': 'Notation',
+    'SLIDER': 'Curseur'
+  }
+  return labels[type] || type
+}
+
+// 🆕 Fonction pour vérifier si un champ a des détails à afficher
+const hasFieldDetails = (field: FormField) => {
+  return field.placeholder || 
+         field.defaultValue || 
+         field.validation?.min || 
+         field.validation?.max || 
+         field.validation?.pattern
+}
 
 // Fonction pour sélectionner un champ (simple clic)
 const selectField = (fieldId: string) => {
-  selectedFieldId.value = selectedFieldId.value === fieldId ? null : fieldId
+  const newSelectedId = props.selectedFieldId === fieldId ? null : fieldId
+  emit('select-field', newSelectedId)
 }
 
 const showAddButton = (event: MouseEvent) => {
@@ -255,9 +362,9 @@ const hideAddButton = (event: MouseEvent) => {
 const openModal = (type: 'step' | 'field', stepId?: string) => {
   modalType.value = type
   
-  if (type === 'step' && stepId) {
+  if (type === 'step' && stepId && props.formConfig) {
     editingStepId.value = stepId
-    editingStep.value = formConfig.value.steps.find(s => s.id === stepId)
+    editingStep.value = props.formConfig.steps.find(s => s.id === stepId)
   } else {
     editingStepId.value = null
     editingStep.value = null
@@ -292,7 +399,7 @@ const openFieldModalAtPosition = (position: number) => {
 // Fonction wrapper pour gérer les mises à jour de champs
 const handleFieldUpdate = (fieldId: string, value: string) => {
   // Convertir la string en objet partiel FormField
-  updateField(fieldId, { defaultValue: value } as Partial<FormField>)
+  emit('update-field', fieldId, { defaultValue: value } as Partial<FormField>)
 }
 
 // Fonction pour éditer un champ existant (double-clic)
@@ -318,7 +425,7 @@ const cancelDelete = () => {
 // Fonction pour confirmer et effectuer la suppression
 const confirmDelete = () => {
   if (fieldToDelete.value) {
-    deleteField(fieldToDelete.value.id)
+    emit('delete-field', fieldToDelete.value.id)
     showDeleteModal.value = false
     fieldToDelete.value = null
   }
@@ -332,7 +439,7 @@ const handleAddField = (fieldData: Partial<FormFieldData>) => {
     // Mode insertion - create complete FormField object
     const newField: FormField = {
       id: `field_${Date.now()}`,
-      stepId: activeStep.value?.id || '',
+      stepId: props.activeStep?.id || '',
       order: insertPosition.value,
       ...fieldData
     } as FormField
@@ -342,13 +449,13 @@ const handleAddField = (fieldData: Partial<FormFieldData>) => {
     // Mode ajout normal
     const newField: FormField = {
       id: `field_${Date.now()}`,
-      stepId: activeStep.value?.id || '',
-      order: activeStep.value?.fields.length || 0,
+      stepId: props.activeStep?.id || '',
+      order: props.activeStep?.fields.length || 0,
       ...fieldData
     } as FormField
     
-    addField(newField)
-    selectedFieldId.value = newField.id
+    emit('add-field', newField)
+    emit('select-field', newField.id)
   }
   
   closeModal()
@@ -356,44 +463,44 @@ const handleAddField = (fieldData: Partial<FormFieldData>) => {
 
 const handleUpdateField = (fieldId: string, fieldData: Partial<FormFieldData>) => {
   console.log('🔄 Updating field:', fieldId, fieldData)
-  updateField(fieldId, fieldData as Partial<FormField>)
+  emit('update-field', fieldId, fieldData as Partial<FormField>)
   closeModal()
 }
 
 // Fonction pour ajouter un champ à une position spécifique
 const addFieldAtPosition = (fieldData: FormField, position: number) => {
-  if (!activeStep.value) return
+  if (!props.activeStep) return
   
   const newField: FormField = {
     ...fieldData,
     id: `field_${Date.now()}`,
-    stepId: activeStep.value.id,
+    stepId: props.activeStep.id,
     order: position
   }
   
   // Décaler les champs suivants
-  activeStep.value.fields.forEach(f => {
+  props.activeStep.fields.forEach(f => {
     if (f.order >= position) {
       f.order += 1
     }
   })
   
   // Ajouter le nouveau champ
-  activeStep.value.fields.push(newField)
+  props.activeStep.fields.push(newField)
   
   // Réordonner
-  activeStep.value.fields.sort((a, b) => a.order - b.order)
-  activeStep.value.fields.forEach((f, index) => {
+  props.activeStep.fields.sort((a, b) => a.order - b.order)
+  props.activeStep.fields.forEach((f, index) => {
     f.order = index
   })
   
-  selectedFieldId.value = newField.id
+  emit('select-field', newField.id)
 }
 
 // Fonction pour gérer la modification d'étape
 const handleUpdateStep = (stepData: { title: string; description?: string }) => {
   if (editingStepId.value) {
-    updateStepTitle(editingStepId.value, stepData.title)
+    emit('update-step-title', editingStepId.value, stepData.title)
     // Vous pouvez aussi mettre à jour la description si nécessaire
   }
   closeModal()
@@ -638,6 +745,100 @@ const handleUpdateStep = (stepData: { title: string; description?: string }) => 
   border-radius: 50%;
   font-size: 0.75rem;
   z-index: 5;
+}
+
+/* 🆕 Styles pour l'en-tête du champ */
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.field-label-section {
+  flex: 1;
+}
+
+.field-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.required-indicator {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.field-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.field-type-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.field-type-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.field-type-text {
+  font-weight: 500;
+}
+
+/* 🆕 Styles pour le contenu du champ */
+.field-content {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+/* 🆕 Styles pour les détails du champ */
+.field-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.field-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.detail-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.detail-text {
+  line-height: 1.3;
 }
 
 /* Diviseurs entre champs */
@@ -916,6 +1117,16 @@ const handleUpdateStep = (stepData: { title: string; description?: string }) => 
     position: static;
     margin-top: 0.5rem;
     justify-content: center;
+  }
+
+  .field-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .field-type-badge {
+    align-self: flex-start;
   }
 }
 
