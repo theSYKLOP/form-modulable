@@ -239,13 +239,12 @@ const goToNextStep = async () => {
     return
   }
   
+  // Simplement naviguer vers l'étape suivante (ne pas soumettre)
   if (currentStepIndex.value < (props.formConfig?.steps.length || 0) - 1) {
     currentStepIndex.value++
     globalMessage.value = null
-  } else {
-    // Dernière étape, soumettre le formulaire
-    await handleFormSubmit()
   }
+  // Ne rien faire si on est à la dernière étape - laisser l'utilisateur cliquer sur "Soumettre"
 }
 
 const handleApiValidation = () => {
@@ -270,18 +269,29 @@ const handleFormSubmit = async () => {
   globalMessage.value = null
   
   try {
+    // Générer un formId si il n'existe pas (pour le mode preview)
+    const formId = props.formConfig.id || `preview_${Date.now()}`
+    
+    // Vérifier que nous avons des données
+    if (!formData.value || Object.keys(formData.value).length === 0) {
+      throw new Error('Aucune donnée à soumettre')
+    }
+    
     // Préparer les données pour la soumission
     const submissionData = {
-      formId: props.formConfig.id,
-      title: props.formConfig.title,
+      formId: formId,
+      title: props.formConfig.title || 'Formulaire sans titre',
       data: formData.value,
       metadata: {
         steps: props.formConfig.steps.length,
         userAgent: navigator.userAgent,
         timestamp: new Date().toISOString(),
-        completionTime: Date.now() // À calculer depuis le début
+        completionTime: Date.now(),
+        isPreview: true // Indiquer que c'est un test preview
       }
     }
+    
+    console.log('📤 Envoi des données:', submissionData)
     
     // Simuler un appel API ou vraie soumission
     const response = await $fetch('/api/form/submit', {

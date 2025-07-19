@@ -72,13 +72,13 @@
       </button>
 
       <button
-        v-if="canGoNext"
+        v-if="canGoNext && !isLastStep"
         @click="handleNext"
         class="step-btn next"
         :disabled="isValidating || (step.apiConfig?.validationRequired && !validationSuccess)"
       >
-        {{ isLastStep ? 'Terminer' : 'Suivant' }}
-        <Icon v-if="!isLastStep" name="heroicons:arrow-right" />
+        Suivant
+        <Icon name="heroicons:arrow-right" />
       </button>
     </div>
   </div>
@@ -210,10 +210,12 @@ onMounted(() => {
 }
 
 .step-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
   margin-bottom: 2rem;
+  line-height: 0; /* Évite les espaces entre les champs inline-block */
+}
+
+.step-fields > * {
+  line-height: normal; /* Remet la hauteur de ligne normale pour le contenu */
 }
 
 .validation-message {

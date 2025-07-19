@@ -111,11 +111,11 @@
                       </p>
                     </div>
                     
-                    <!-- Badge du type de champ -->
+                    <!-- Badge du type de champ
                     <div class="field-type-badge">
                       <Icon :name="getFieldTypeIcon(field.type)" class="field-type-icon" />
                       <span class="field-type-text">{{ getFieldTypeLabel(field.type) }}</span>
-                    </div>
+                    </div> -->
                   </div>
 
                   <!-- 🆕 Contenu du champ avec FieldRenderer -->

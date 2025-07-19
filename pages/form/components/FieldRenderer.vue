@@ -313,13 +313,36 @@ const isVisible = computed(() => {
 }
 
 .field-renderer.half {
-  width: 48%;
+  width: calc(50% - 0.5rem);
   display: inline-block;
+  vertical-align: top;
+  margin-right: 1rem;
+}
+
+.field-renderer.half:nth-child(2n) {
+  margin-right: 0;
 }
 
 .field-renderer.third {
-  width: 32%;
+  width: calc(33.333% - 0.67rem);
   display: inline-block;
+  vertical-align: top;
+  margin-right: 1rem;
+}
+
+.field-renderer.third:nth-child(3n) {
+  margin-right: 0;
+}
+
+.field-renderer.quarter {
+  width: calc(25% - 0.75rem);
+  display: inline-block;
+  vertical-align: top;
+  margin-right: 1rem;
+}
+
+.field-renderer.quarter:nth-child(4n) {
+  margin-right: 0;
 }
 
 .field-header {
@@ -531,5 +554,16 @@ const isVisible = computed(() => {
   font-size: 0.75rem;
   color: #6b7280;
   margin-top: 0.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .field-renderer.half,
+  .field-renderer.third,
+  .field-renderer.quarter {
+    width: 100% !important;
+    display: block !important;
+    margin-right: 0 !important;
+  }
 }
 </style>
