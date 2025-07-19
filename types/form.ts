@@ -44,13 +44,19 @@ export interface FormField extends FormFieldData {}
 
 // ...existing code...
 
+export interface ApiFieldMapping {
+  fieldId: string
+  parameterName: string
+  fieldLabel?: string // Pour l'affichage dans l'interface
+}
+
 export interface StepApiConfig {
   enabled: boolean
   endpoint: string
-  method: 'POST'
+  method: 'POST' | 'GET'
   headers?: Record<string, string>
-  params?: Record<string, any>
-  fieldsToSend: string[] // IDs des champs à envoyer
+  staticParams?: Record<string, any> // Paramètres statiques
+  fieldMappings: ApiFieldMapping[] // Mapping champs -> paramètres API
   validationRequired?: boolean // Si true, l'étape ne peut pas être validée sans succès API
   successMessage?: string
   errorMessage?: string
@@ -62,7 +68,7 @@ export interface FormStep {
   description?: string
   order: number
   fields: FormField[]
-  apiConfig?: StepApiConfig
+  apiConfig?: StepApiConfig | null // ✅ Permettre null explicitement
 }
 
 export interface FormConfig {

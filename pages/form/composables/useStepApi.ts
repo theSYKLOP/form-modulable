@@ -27,14 +27,21 @@ export function useStepApi() {
     validationSuccess.value = null
 
     try {
-      // Préparer les données à envoyer
+      // Préparer les données à envoyer selon les mappings
       const dataToSend: Record<string, any> = {}
       
-      // Filtrer les champs selon la configuration
-      for (const fieldId of apiConfig.fieldsToSend) {
-        const field = allFields.find(f => f.id === fieldId)
-        if (field && formData[field.name] !== undefined) {
-          dataToSend[field.name] = formData[field.name]
+      // Ajouter les paramètres statiques
+      if (apiConfig.staticParams) {
+        Object.assign(dataToSend, apiConfig.staticParams)
+      }
+      
+      // Ajouter les champs mappés
+      for (const mapping of apiConfig.fieldMappings) {
+        if (mapping.fieldId && mapping.parameterName) {
+          const field = allFields.find(f => f.id === mapping.fieldId)
+          if (field && formData[field.name] !== undefined) {
+            dataToSend[mapping.parameterName] = formData[field.name]
+          }
         }
       }
 
@@ -51,7 +58,7 @@ export function useStepApi() {
           stepId: 'step-validation',
           data: dataToSend,
           endpoint: apiConfig.endpoint,
-          method: 'POST',
+          method: apiConfig.method,
           headers
         }
       })

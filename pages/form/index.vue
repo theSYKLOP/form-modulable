@@ -75,7 +75,7 @@
 
       <!-- 🔧 Conteneur principal avec debug -->
       <div class="main-content">
-        <!-- Debug des conditions -->
+        <!-- Debug des conditions
         <div v-if="true" class="debug-banner">
           <span>Mode: {{ isPreviewMode ? 'PREVIEW' : 'EDIT' }}</span>
           <span>|</span>
@@ -84,14 +84,14 @@
           <span>ActiveStep: {{ activeStep ? 'EXISTS' : 'NULL' }}</span>
           <span>|</span>
           <span>PreviewConfig: {{ getPreviewFormConfig ? 'EXISTS' : 'NULL' }}</span>
-        </div>
+        </div> -->
 
         <!-- Mode Édition -->
         <FormCanvas 
-          v-show="!isPreviewMode && formConfig && activeStep" 
-          :form-config="formConfig"
+          v-if="isFormReady && isFormConfigValid && isActiveStepValid" 
+          :form-config="formConfig as FormConfig"
           :active-step-index="activeStepIndex"
-          :active-step="activeStep"
+          :active-step="activeStep as FormStep"
           :selected-field-id="selectedFieldId"
           @update-step-title="updateStepTitle"
           @update-step="updateStep"
@@ -107,12 +107,12 @@
 
         <!-- Mode Prévisualisation -->
         <FormPreview 
-          v-show="isPreviewMode"
+          v-if="isPreviewMode"
           :form-config="getPreviewFormConfig"
         />
         
         <!-- Message si rien ne s'affiche -->
-        <div v-show="!isPreviewMode && (!formConfig || !activeStep)" class="no-config-placeholder">
+        <div v-if="!isPreviewMode && !isFormReady" class="no-config-placeholder">
           <div class="placeholder-content">
             <Icon name="i-heroicons-document-text" class="placeholder-icon" />
             <h3>Initialisation du formulaire...</h3>
@@ -158,10 +158,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import FormCanvas from './components/FormCanvas.vue'
 import FormPreview from './components/FormPreview.vue'
 import { useFormBuilder } from './composables/useFormBuilder'
+import type { FormConfig, FormStep } from '~/types/form'
 
 // Configuration de la page
 definePageMeta({
@@ -329,6 +330,19 @@ watch(() => isPreviewMode.value, (newValue) => {
   console.log('🔧 formConfig exists:', !!formConfig.value)
   console.log('🔧 getPreviewFormConfig exists:', !!getPreviewFormConfig.value)
   console.log('🔧 getPreviewFormConfig value:', getPreviewFormConfig.value)
+})
+
+// ✅ Computed properties pour les validations de types
+const isFormReady = computed(() => {
+  return !!(formConfig.value && activeStep.value && !isPreviewMode.value)
+})
+
+const isFormConfigValid = computed(() => {
+  return formConfig.value !== null
+})
+
+const isActiveStepValid = computed(() => {
+  return activeStep.value !== undefined
 })
 
 // Initialisation

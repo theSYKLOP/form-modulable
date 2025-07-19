@@ -1,37 +1,29 @@
-import prisma from '~/server/utils/prisma'
-import { validateFormConfig, validateId } from '~/server/utils/form-validator'
-import { handleApiError, formatSuccessResponse } from '~/server/utils/error-handler'
-import type { FormConfig } from '~/types/form'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
   try {
-    const id = getRouterParam(event, 'id')
-    const body = await readBody(event) as FormConfig
+    const formId = getRouterParam(event, 'id')
+    const body = await readBody(event)
 
-    // Validation de l'ID
-    const idValidation = validateId(id)
-    if (!idValidation.isValid) {
+    // ✅ Validation de l'ID
+    if (!formId || typeof formId !== 'string') {
       throw createError({
         statusCode: 400,
-        statusMessage: 'ID invalide',
-        data: { errors: idValidation.errors }
+        statusMessage: 'ID du formulaire invalide'
       })
     }
 
-    // Validation des données
-    const dataValidation = validateFormConfig(body)
-    if (!dataValidation.isValid) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Données invalides',
-        data: { errors: dataValidation.errors }
-      })
-    }
-
-    // Vérifier l'existence du formulaire
+    // ✅ Vérifier l'existence du formulaire avec toutes les données nécessaires
     const existingForm = await prisma.form.findUnique({
-      where: { id: id! },
-      select: { id: true }
+      where: { id: formId },
+      select: { 
+        id: true, 
+        userId: true, 
+        isPublished: true,
+        title: true 
+      }
     })
 
     if (!existingForm) {
@@ -41,45 +33,211 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Mettre à jour le formulaire
+    // ✅ Vérification des permissions (optionnel - à activer si vous gérez les permissions)
+    // if (body.requestUserId && body.requestUserId !== existingForm.userId) {
+    //   throw createError({
+    //     statusCode: 403,
+    //     statusMessage: 'Accès non autorisé'
+    //   })
+    // }
+
+    // ✅ Validation des données si fournies
+    if (body.title !== undefined && (!body.title?.trim())) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Le titre ne peut pas être vide'
+      })
+    }
+
+    if (body.steps !== undefined && !Array.isArray(body.steps)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Le format des étapes est invalide'
+      })
+    }
+
+    if (body.userId !== undefined && body.userId !== existingForm.userId) {
+      // Vérifier que le nouvel utilisateur existe
+      const newUser = await prisma.user.findUnique({
+        where: { id: body.userId },
+        select: { id: true }
+      })
+
+      if (!newUser) {
+        throw createError({
+          statusCode: 404,
+          statusMessage: 'Nouvel utilisateur non trouvé'
+        })
+      }
+    }
+
+    // ✅ Vérification du template si fourni
+    if (body.templateId !== undefined && body.templateId !== null) {
+      const template = await prisma.formTemplate.findUnique({
+        where: { id: body.templateId },
+        select: { id: true }
+      })
+
+      if (!template) {
+        throw createError({
+          statusCode: 404,
+          statusMessage: 'Template non trouvé'
+        })
+      }
+    }
+
+    // ✅ Préparation des données de mise à jour avec validation
+    const updateData: any = {}
+    
+    if (body.title !== undefined) updateData.title = body.title.trim()
+    if (body.description !== undefined) updateData.description = body.description?.trim() || ''
+    if (body.layout !== undefined) {
+      updateData.layout = ['VERTICAL', 'HORIZONTAL'].includes(body.layout) ? body.layout : 'VERTICAL'
+    }
+    if (body.spacing !== undefined) {
+      updateData.spacing = ['COMPACT', 'NORMAL', 'RELAXED'].includes(body.spacing) ? body.spacing : 'NORMAL'
+    }
+    if (body.mode !== undefined) {
+      updateData.mode = ['EDIT', 'READONLY', 'PREVIEW'].includes(body.mode) ? body.mode : 'EDIT'
+    }
+    if (body.submitButtonText !== undefined) updateData.submitButtonText = body.submitButtonText?.trim() || 'Soumettre'
+    if (body.cancelButtonText !== undefined) updateData.cancelButtonText = body.cancelButtonText?.trim() || 'Annuler'
+    if (body.resetButtonText !== undefined) updateData.resetButtonText = body.resetButtonText?.trim() || 'Réinitialiser'
+    if (body.validateOnSubmit !== undefined) updateData.validateOnSubmit = Boolean(body.validateOnSubmit)
+    if (body.validateOnBlur !== undefined) updateData.validateOnBlur = Boolean(body.validateOnBlur)
+    if (body.validateOnChange !== undefined) updateData.validateOnChange = Boolean(body.validateOnChange)
+    if (body.isPublished !== undefined) updateData.isPublished = Boolean(body.isPublished)
+    if (body.isTemplate !== undefined) updateData.isTemplate = Boolean(body.isTemplate)
+    if (body.templateId !== undefined) updateData.templateId = body.templateId
+    if (body.userId !== undefined) updateData.userId = body.userId
+    
+    // ✅ Mise à jour des steps avec validation
+    if (body.steps !== undefined) {
+      updateData.steps = Array.isArray(body.steps) ? body.steps : []
+    }
+
+    // ✅ Gestion correcte de publishedAt
+    if (body.isPublished !== undefined) {
+      if (body.isPublished && !existingForm.isPublished) {
+        updateData.publishedAt = new Date()
+      } else if (!body.isPublished && existingForm.isPublished) {
+        updateData.publishedAt = null
+      }
+    }
+
+    // ✅ Mise à jour avec gestion d'erreur
     const updatedForm = await prisma.form.update({
-      where: { id: id! },
-      data: {
-        title: body.title.trim(),
-        description: body.description?.trim() || '',
-        layout: body.layout || 'VERTICAL',
-        spacing: body.spacing || 'NORMAL',
-        steps: JSON.parse(JSON.stringify(body.steps || [])),
-        fields: JSON.parse(JSON.stringify(body.steps?.flatMap(step => step.fields) || []))
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        layout: true,
-        spacing: true,
-        steps: true,
-        fields: true,
-        createdAt: true,
-        updatedAt: true
+      where: { id: formId },
+      data: updateData,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true
+          }
+        },
+        template: {
+          select: {
+            id: true,
+            title: true,
+            category: true
+          }
+        },
+        _count: {
+          select: {
+            submissions: true
+          }
+        }
       }
     })
 
-    const responseData: FormConfig = {
-      id: updatedForm.id,
-      title: updatedForm.title,
-      description: updatedForm.description || '',
-      layout: updatedForm.layout as 'VERTICAL' | 'HORIZONTAL',
-      spacing: updatedForm.spacing as 'COMPACT' | 'NORMAL' | 'RELAXED',
-      steps: Array.isArray(updatedForm.steps) ? updatedForm.steps as any[] : []
+    // ✅ Calcul des statistiques
+    const stats = calculateFormStats(updatedForm.steps as any[])
+
+    const responseData = {
+      ...updatedForm,
+      stats: {
+        ...stats,
+        submissionsCount: updatedForm._count.submissions
+      }
     }
 
-    return formatSuccessResponse(
-      responseData,
-      'Formulaire mis à jour avec succès'
-    )
+    return {
+      success: true,
+      data: responseData,
+      message: 'Formulaire mis à jour avec succès'
+    }
 
   } catch (error: any) {
-    return handleApiError(error, 'UPDATE_FORM')
+    console.error('Erreur lors de la mise à jour du formulaire:', error)
+    
+    // ✅ Gestion d'erreur unifiée
+    if (error.statusCode) {
+      throw error
+    }
+
+    // ✅ Erreurs Prisma spécifiques
+    if (error.code === 'P2002') {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Un formulaire avec ce nom existe déjà'
+      })
+    }
+
+    if (error.code === 'P2025') {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Formulaire non trouvé'
+      })
+    }
+
+    if (error.code === 'P2003') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Référence invalide (utilisateur ou template)'
+      })
+    }
+    
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Erreur lors de la mise à jour du formulaire',
+      data: process.env.NODE_ENV === 'development' ? { 
+        error: error.message,
+        code: error.code 
+      } : undefined
+    })
+  } finally {
+    await prisma.$disconnect()
   }
 })
+
+// ✅ Fonction utilitaire réutilisable
+function calculateFormStats(steps: any[]) {
+  if (!Array.isArray(steps)) {
+    return {
+      stepsCount: 0,
+      fieldsCount: 0,
+      stepsWithApiValidation: 0
+    }
+  }
+
+  let fieldsCount = 0
+  let stepsWithApiValidation = 0
+
+  steps.forEach(step => {
+    if (Array.isArray(step.fields)) {
+      fieldsCount += step.fields.length
+    }
+    if (step.apiConfig?.enabled) {
+      stepsWithApiValidation++
+    }
+  })
+
+  return {
+    stepsCount: steps.length,
+    fieldsCount,
+    stepsWithApiValidation
+  }
+}

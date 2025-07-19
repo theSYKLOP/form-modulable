@@ -196,6 +196,7 @@
       :type="modalType"
       :field="editingField"
       :insert-position="insertPosition"
+      :available-fields="sortedFields"
       @close="closeModal"
       @addField="handleAddField"
       @updateField="handleUpdateField"

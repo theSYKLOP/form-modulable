@@ -25,7 +25,7 @@ export const useFormBuilder = () => {
   const lastSavedAt = ref<Date | null>(null)
 
   // Computed
-  const activeStep = computed(() => 
+  const activeStep = computed<FormStep | undefined>(() => 
     formConfig.value?.steps[activeStepIndex.value]
   )
   
@@ -81,7 +81,8 @@ export const useFormBuilder = () => {
           title: 'Étape 1',
           description: '',
           order: 0,
-          fields: []
+          fields: [],
+          apiConfig: null // ✅ Explicitement null
         }
       ]
     }
@@ -227,7 +228,8 @@ export const useFormBuilder = () => {
       title: `Étape ${formConfig.value.steps.length + 1}`,
       description: '',
       order: formConfig.value.steps.length,
-      fields: []
+      fields: [],
+      apiConfig: null // ✅ Explicitement null
     }
     
     formConfig.value.steps.push(newStep)
@@ -350,7 +352,7 @@ export const useFormBuilder = () => {
   }
 
   // 🔧 Fonction pour s'assurer que la structure est correcte pour le preview
-  const getPreviewFormConfig = computed(() => {
+  const getPreviewFormConfig = computed<FormConfig | null>(() => {
     console.log('🔧 getPreviewFormConfig computed - formConfig:', formConfig.value)
     
     if (!formConfig.value) {
@@ -366,13 +368,13 @@ export const useFormBuilder = () => {
     console.log('🔧 getPreviewFormConfig - Steps:', steps)
 
     // S'assurer que chaque step a les propriétés nécessaires
-    const normalizedSteps = steps.map(step => ({
+    const normalizedSteps: FormStep[] = steps.map(step => ({
       ...step,
       fields: Array.isArray(step.fields) ? step.fields : [],
-      apiConfig: step.apiConfig || null
+      apiConfig: step.apiConfig || null // ✅ Explicitement null si pas défini
     }))
 
-    const result = {
+    const result: FormConfig = {
       ...formConfig.value,
       steps: normalizedSteps
     }

@@ -122,235 +122,281 @@
             </button>
           </div>
 
-          <!-- Logique conditionnelle -->
+          <!-- Logique conditionnelle optimisée -->
           <div class="conditional-logic">
             <div class="section-header">
-              <h4 class="section-title">Logique conditionnelle</h4>
-              <div class="section-toggle">
-                <label class="toggle-switch">
-                  <input 
-                    v-model="fieldConfig.conditionalLogic!.enabled"
-                    type="checkbox"
-                    class="form-checkbox"
-                  />
-                  <span class="toggle-label">Activer</span>
-                </label>
+              <div class="section-info">
+                <h4 class="section-title">
+                  <Icon name="heroicons:adjustments-horizontal" class="section-icon" />
+                  Logique conditionnelle
+                </h4>
+                <p class="section-hint">Contrôlez quand ce champ apparaît selon d'autres champs</p>
               </div>
-            </div>
-            
-            <div v-if="fieldConfig.conditionalLogic?.enabled" class="conditional-content">
-              <div class="form-group">
-                <label>Action</label>
-                <select v-model="fieldConfig.conditionalLogic!.action" class="form-select">
-                  <option value="show">Afficher ce champ si</option>
-                  <option value="hide">Masquer ce champ si</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label>Opérateur logique</label>
-                <div class="operator-toggle">
-                  <button 
-                    class="operator-btn"
-                    :class="{ active: fieldConfig.conditionalLogic!.logicalOperator === 'AND' }"
-                    @click="fieldConfig.conditionalLogic!.logicalOperator = 'AND'"
-                  >
-                    Toutes les conditions (ET)
-                  </button>
-                  <button 
-                    class="operator-btn"
-                    :class="{ active: fieldConfig.conditionalLogic!.logicalOperator === 'OR' }"
-                    @click="fieldConfig.conditionalLogic!.logicalOperator = 'OR'"
-                  >
-                    Une condition (OU)
-                  </button>
-                </div>
-              </div>
-              
-              <div v-if="fieldConfig.conditionalLogic!.rules.length > 0" class="conditional-rules">
-                <div 
-                  v-for="(rule, index) in fieldConfig.conditionalLogic!.rules"
-                  :key="index"
-                  class="rule-item"
-                >
-                  <select v-model="rule.targetFieldId" class="form-select">
-                    <option value="">Sélectionnez un champ</option>
-                    <!-- Liste des champs ici (à implémenter) -->
-                  </select>
-                  
-                  <select v-model="rule.operator" class="form-select">
-                    <option value="equals">Égal à</option>
-                    <option value="not_equals">Différent de</option>
-                    <option value="contains">Contient</option>
-                    <option value="empty">Est vide</option>
-                    <option value="not_empty">N'est pas vide</option>
-                  </select>
-                  
-                  <input 
-                    v-if="!['empty', 'not_empty'].includes(rule.operator)"
-                    v-model="rule.value"
-                    type="text"
-                    placeholder="Valeur"
-                    class="form-input"
-                  />
-                  
-                  <button 
-                    @click="fieldConfig.conditionalLogic!.rules.splice(index, 1)" 
-                    class="remove-rule-btn"
-                  >
-                    <Icon name="i-heroicons-trash" />
-                  </button>
-                </div>
-              </div>
-              
-              <button 
-                @click="addConditionalRule" 
-                class="add-rule-btn"
-              >
-                <Icon name="i-heroicons-plus" />
-                Ajouter une condition
-              </button>
-            </div>
-          </div>
-          
-          <!-- Configuration API simplifiée -->
-          <div v-if="canHaveApi" class="api-config">
-            <div class="api-header">
-              <label class="api-toggle">
+              <label class="toggle-switch">
                 <input 
-                  v-model="fieldConfig.hasApi"
+                  v-model="fieldConfig.conditionalLogic!.enabled"
                   type="checkbox"
-                  class="form-checkbox"
+                  class="form-checkbox toggle-input"
                 />
-                <span class="api-toggle-label">Charger les options depuis une API</span>
+                <span class="toggle-slider"></span>
               </label>
             </div>
             
-            <div v-if="fieldConfig.hasApi" class="api-fields">
-              <div class="api-setup-wizard">
-                <!-- Étape 1: URL API -->
-                <div class="form-group api-endpoint-input">
-                  <label>URL de l'API</label>
-                  <div class="input-with-button">
-                    <input 
-                      v-model="fieldConfig.apiConfig!.endpoint"
-                      type="text"
-                      placeholder="https://api.example.com/data"
-                      class="form-input"
-                    />
-                    <button 
-                      @click="testApiConnection" 
-                      class="api-test-btn" 
-                      :disabled="!isApiConfigValid"
-                      title="Tester l'API"
+            <div v-if="fieldConfig.conditionalLogic?.enabled" class="conditional-content">
+              <!-- Configuration rapide en une ligne -->
+              <div class="quick-config">
+                <div class="config-row">
+                  <select v-model="fieldConfig.conditionalLogic!.action" class="form-select compact">
+                    <option value="show">Afficher</option>
+                    <option value="hide">Masquer</option>
+                  </select>
+                  
+                  <span class="config-text">ce champ si</span>
+                  
+                  <select v-model="fieldConfig.conditionalLogic!.logicalOperator" class="form-select compact">
+                    <option value="AND">toutes</option>
+                    <option value="OR">une</option>
+                  </select>
+                  
+                  <span class="config-text">des conditions suivantes :</span>
+                </div>
+              </div>
+              
+              <!-- Règles conditionnelles compactes -->
+              <div class="conditional-rules-compact">
+                <div 
+                  v-for="(rule, index) in fieldConfig.conditionalLogic!.rules"
+                  :key="index"
+                  class="rule-card"
+                >
+                  <div class="rule-content">
+                    <!-- Sélection du champ -->
+                    <div class="rule-field">
+                      <select v-model="rule.targetFieldId" class="form-select rule-select">
+                        <option value="">Choisir un champ</option>
+                        <option
+                          v-for="availableField in filteredAvailableFields"
+                          :key="availableField.id"
+                          :value="availableField.id"
+                        >
+                          {{ availableField.label || availableField.name }}
+                        </option>
+                      </select>
+                    </div>
+                    
+                    <!-- Opérateur -->
+                    <div class="rule-operator">
+                      <select v-model="rule.operator" class="form-select rule-select">
+                        <option value="equals">est égal à</option>
+                        <option value="not_equals">est différent de</option>
+                        <option value="contains">contient</option>
+                        <option value="empty">est vide</option>
+                        <option value="not_empty">n'est pas vide</option>
+                        <option value="greater_than">est supérieur à</option>
+                        <option value="less_than">est inférieur à</option>
+                      </select>
+                    </div>
+                    
+                    <!-- Valeur (si nécessaire) -->
+                    <div 
+                      v-if="!['empty', 'not_empty'].includes(rule.operator)"
+                      class="rule-value"
                     >
-                      <Icon name="i-heroicons-play" class="btn-icon" />
-                    </button>
-                  </div>
-                  <small class="form-hint">Entrez l'URL qui renvoie vos données au format JSON</small>
-                </div>
-                
-                <!-- Prévisualisation avec sélection rapide des champs -->
-                <div v-if="apiPreviewLoading" class="api-preview-loading">
-                  <Icon name="i-heroicons-arrow-path" class="spin-icon" />
-                  <span>Connexion à l'API...</span>
-                </div>
-                
-                <div v-else-if="apiPreviewError" class="api-preview-error">
-                  <Icon name="i-heroicons-exclamation-circle" class="error-icon" />
-                  <span>{{ apiPreviewError }}</span>
-                </div>
-                
-                <div v-else-if="apiPreviewData" class="api-preview">
-                  <h4 class="api-preview-title">Configuration automatique</h4>
-                  
-                  <!-- Aperçu des données détectées -->
-                  <div class="api-mapping-preview">
-                    <div class="api-preview-fields">
-                      <div class="api-field-selector">
-                        <label>Champ à utiliser comme libellé:</label>
-                        <div class="api-field-buttons">
-                          <button 
-                            v-for="field in detectedFields" 
-                            :key="field"
-                            @click="fieldConfig.apiConfig!.labelKey = field"
-                            class="api-field-btn"
-                            :class="{ active: fieldConfig.apiConfig!.labelKey === field }"
-                          >
-                            {{ field }}
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div class="api-field-selector">
-                        <label>Champ à utiliser comme valeur:</label>
-                        <div class="api-field-buttons">
-                          <button 
-                            v-for="field in detectedFields" 
-                            :key="field"
-                            @click="fieldConfig.apiConfig!.valueKey = field"
-                            class="api-field-btn"
-                            :class="{ active: fieldConfig.apiConfig!.valueKey === field }"
-                          >
-                            {{ field }}
-                          </button>
-                        </div>
-                      </div>
+                      <input 
+                        v-model="rule.value"
+                        type="text"
+                        placeholder="Valeur"
+                        class="form-input rule-input"
+                      />
                     </div>
                     
-                    <!-- Aperçu des résultats -->
-                    <div class="api-results-preview">
-                      <h5>Aperçu des options</h5>
-                      <div class="api-results-list">
-                        <div v-for="(item, index) in apiPreviewOptions.slice(0, 3)" :key="index" class="api-result-item">
-                          <div class="api-result-label">{{ item.label }}</div>
-                          <div class="api-result-value">{{ item.value }}</div>
-                        </div>
-                        <div v-if="apiPreviewOptions.length > 3" class="api-results-more">
-                          + {{ apiPreviewOptions.length - 3 }} autres options
-                        </div>
-                      </div>
+                    <!-- Aperçu de la règle -->
+                    <div class="rule-preview">
+                      {{ getRulePreview(rule) }}
                     </div>
                   </div>
                   
-                  <!-- Options avancées (repliées par défaut) -->
-                  <div class="advanced-options">
-                    <button @click="showAdvancedApi = !showAdvancedApi" class="advanced-toggle">
-                      {{ showAdvancedApi ? 'Masquer les options avancées' : 'Options avancées' }}
-                      <Icon :name="showAdvancedApi ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" />
-                    </button>
-                    
-                    <div v-if="showAdvancedApi" class="advanced-settings">
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label>Méthode</label>
-                          <select v-model="fieldConfig.apiConfig!.method" class="form-select">
-                            <option value="GET">GET</option>
-                            <option value="POST">POST</option>
-                          </select>
-                        </div>
-                        
-                        <div class="form-group">
-                          <label>Cache (secondes)</label>
-                          <input 
-                            v-model="fieldConfig.apiConfig!.cacheTime" 
-                            type="number" 
-                            min="0"
-                            placeholder="0" 
-                            class="form-input" 
-                          />
-                        </div>
+                  <!-- Action de suppression -->
+                  <button 
+                    @click="fieldConfig.conditionalLogic!.rules.splice(index, 1)" 
+                    class="rule-remove-btn"
+                    title="Supprimer cette condition"
+                  >
+                    <Icon name="heroicons:x-mark" />
+                  </button>
+                </div>
+                
+                <!-- Bouton d'ajout de règle -->
+                <button 
+                  @click="addConditionalRule" 
+                  class="add-rule-btn-compact"
+                >
+                  <Icon name="heroicons:plus-circle" />
+                  <span>Ajouter une condition</span>
+                </button>
+                
+                <!-- Message informatif si pas de champs disponibles -->
+                <div v-if="filteredAvailableFields.length === 0" class="no-fields-available">
+                  <Icon name="heroicons:information-circle" />
+                  <span>Ajoutez d'autres champs à cette étape pour créer des conditions</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Configuration API optimisée -->
+          <div v-if="canHaveApi" class="api-config">
+            <div class="section-header">
+              <div class="section-info">
+                <h4 class="section-title">
+                  <Icon name="heroicons:cloud-arrow-down" class="section-icon" />
+                  Configuration API
+                </h4>
+                <p class="section-hint">Chargez les options depuis une source de données externe</p>
+              </div>
+              <label class="toggle-switch">
+                <input 
+                  v-model="fieldConfig.hasApi"
+                  type="checkbox"
+                  class="form-checkbox toggle-input"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div v-if="fieldConfig.hasApi" class="api-content">
+              <!-- Configuration rapide en une ligne -->
+              <div class="quick-config">
+                <div class="config-grid">
+                  <div class="endpoint-group">
+                    <label class="config-label">URL de l'API</label>
+                    <div class="input-with-button">
+                      <input 
+                        v-model="fieldConfig.apiConfig!.endpoint"
+                        type="text"
+                        placeholder="https://api.example.com/data"
+                        class="form-input compact"
+                      />
+                      <button 
+                        @click="testApiConnection" 
+                        class="test-btn" 
+                        :disabled="!isApiConfigValid"
+                        title="Tester l'API"
+                      >
+                        <Icon name="heroicons:play" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="method-group">
+                    <label class="config-label">Méthode</label>
+                    <select v-model="fieldConfig.apiConfig!.method" class="form-select compact">
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- États de l'API -->
+              <div v-if="apiPreviewLoading" class="api-status loading">
+                <Icon name="heroicons:arrow-path" class="status-icon spin" />
+                <span>Connexion à l'API...</span>
+              </div>
+              
+              <div v-else-if="apiPreviewError" class="api-status error">
+                <Icon name="heroicons:exclamation-triangle" class="status-icon" />
+                <span>{{ apiPreviewError }}</span>
+              </div>
+              
+              <div v-else-if="apiPreviewData" class="api-status success">
+                <Icon name="heroicons:check-circle" class="status-icon" />
+                <span>{{ apiPreviewOptions.length }} options détectées</span>
+              </div>
+              
+              <!-- Configuration des champs détectés -->
+              <div v-if="apiPreviewData" class="field-mapping-compact">
+                <div class="mapping-row">
+                  <div class="mapping-group">
+                    <label class="mapping-label">Champ libellé</label>
+                    <div class="field-buttons-compact">
+                      <button 
+                        v-for="field in detectedFields" 
+                        :key="`label-${field}`"
+                        @click="fieldConfig.apiConfig!.labelKey = field"
+                        class="field-btn"
+                        :class="{ active: fieldConfig.apiConfig!.labelKey === field }"
+                      >
+                        {{ field }}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="mapping-group">
+                    <label class="mapping-label">Champ valeur</label>
+                    <div class="field-buttons-compact">
+                      <button 
+                        v-for="field in detectedFields" 
+                        :key="`value-${field}`"
+                        @click="fieldConfig.apiConfig!.valueKey = field"
+                        class="field-btn"
+                        :class="{ active: fieldConfig.apiConfig!.valueKey === field }"
+                      >
+                        {{ field }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Aperçu des résultats -->
+                <div v-if="apiPreviewOptions.length > 0" class="results-preview-compact">
+                  <div class="preview-header">
+                    <span class="preview-title">Aperçu</span>
+                    <span class="preview-count">{{ apiPreviewOptions.length }} options</span>
+                  </div>
+                  <div class="preview-items">
+                    <div 
+                      v-for="(item, index) in apiPreviewOptions.slice(0, 2)" 
+                      :key="index" 
+                      class="preview-item"
+                    >
+                      <span class="item-label">{{ item.label }}</span>
+                      <span class="item-value">{{ item.value }}</span>
+                    </div>
+                    <div v-if="apiPreviewOptions.length > 2" class="preview-more">
+                      +{{ apiPreviewOptions.length - 2 }} autres
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Options avancées (repliables) -->
+                <div class="advanced-options">
+                  <button @click="showAdvancedApi = !showAdvancedApi" class="advanced-toggle">
+                    {{ showAdvancedApi ? 'Masquer les options avancées' : 'Options avancées' }}
+                    <Icon :name="showAdvancedApi ? 'heroicons:chevron-up' : 'heroicons:chevron-down'" />
+                  </button>
+                  
+                  <div v-if="showAdvancedApi" class="advanced-settings">
+                    <div class="advanced-grid">
+                      <div class="form-group">
+                        <label class="config-label">Cache (secondes)</label>
+                        <input 
+                          v-model="fieldConfig.apiConfig!.cacheTime" 
+                          type="number" 
+                          min="0"
+                          placeholder="0" 
+                          class="form-input compact" 
+                        />
                       </div>
                       
                       <div class="form-group">
-                        <label>Chemin JSON</label>
+                        <label class="config-label">Chemin JSON</label>
                         <input 
                           v-model="fieldConfig.apiConfig!.responsePath" 
                           type="text"
-                          placeholder="Ex: data.results" 
-                          class="form-input"
+                          placeholder="data.results" 
+                          class="form-input compact"
                         />
-                        <small class="form-hint">Chemin vers le tableau de données dans la réponse JSON</small>
                       </div>
                     </div>
                   </div>
@@ -419,6 +465,7 @@ const props = defineProps<{
   editingStepId?: string | null
   insertPosition?: number | null
   field?: FormFieldData | null // Champ à modifier (si mode édition)
+  availableFields?: FormFieldData[] // Champs disponibles pour la logique conditionnelle
 }>()
 
 const emit = defineEmits<{
@@ -765,6 +812,43 @@ const initEditMode = () => {
   step.value = 'config'
 }
 
+// Computed properties pour la logique conditionnelle
+const filteredAvailableFields = computed(() => {
+  if (!props.availableFields) return []
+  
+  // Exclure le champ en cours d'édition pour éviter les références circulaires
+  return props.availableFields.filter(field => 
+    field.id !== props.field?.id && 
+    field.name !== fieldConfig.value.name
+  )
+})
+
+const getRulePreview = (rule: any) => {
+  if (!rule.targetFieldId || !rule.operator) return 'Règle incomplète'
+  
+  const field = filteredAvailableFields.value.find(f => f.id === rule.targetFieldId)
+  const fieldName = field?.label || field?.name || 'champ'
+  
+  const operatorLabels: Record<string, string> = {
+    'equals': 'est égal à',
+    'not_equals': 'est différent de',
+    'contains': 'contient',
+    'empty': 'est vide',
+    'not_empty': 'n\'est pas vide',
+    'greater_than': 'est supérieur à',
+    'less_than': 'est inférieur à'
+  }
+  
+  const operatorText = operatorLabels[rule.operator] || rule.operator
+  
+  if (['empty', 'not_empty'].includes(rule.operator)) {
+    return `"${fieldName}" ${operatorText}`
+  }
+  
+  const value = rule.value || '...'
+  return `"${fieldName}" ${operatorText} "${value}"`
+}
+
 // Gérer la logique conditionnelle entre les champs
 const setupConditionalLogic = () => {
   // Interface pour les règles conditionnelles
@@ -990,23 +1074,247 @@ watch(() => props.isOpen, (isOpen) => {
 
 .conditional-logic {
   margin-top: 1.5rem;
-  padding: 1rem;
+  padding: 1.25rem;
   border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: #f9fafb;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+}
+
+.section-info {
+  flex: 1;
 }
 
 .section-title {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: #6366f1;
+}
+
+.section-hint {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background-color: #d1d5db;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  top: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-input:checked + .toggle-slider {
+  background-color: #6366f1;
+}
+
+.toggle-input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.conditional-content {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.quick-config {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.config-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.form-select.compact {
+  min-width: 100px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+.config-text {
+  font-size: 0.875rem;
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.conditional-rules-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rule-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.rule-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.rule-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.rule-field,
+.rule-operator,
+.rule-value {
+  display: flex;
+  flex-direction: column;
+}
+
+.rule-select,
+.rule-input {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  min-height: 38px;
+}
+
+.rule-select:focus,
+.rule-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.rule-preview {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  color: #475569;
+  font-style: italic;
+}
+
+.rule-remove-btn {
+  padding: 0.5rem;
+  border: 1px solid #ef4444;
+  background: white;
+  color: #ef4444;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 38px;
+  height: 38px;
+}
+
+.rule-remove-btn:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.05);
+}
+
+.add-rule-btn-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  border: 2px dashed #cbd5e1;
+  background: white;
+  color: #6366f1;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.add-rule-btn-compact:hover {
+  border-color: #6366f1;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.no-fields-available {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  color: #92400e;
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 .section-toggle {
@@ -1014,21 +1322,9 @@ watch(() => props.isOpen, (isOpen) => {
   align-items: center;
 }
 
-.toggle-switch {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
 .toggle-label {
   font-size: 0.875rem;
   color: #6b7280;
-}
-
-.conditional-content {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px dashed #d1d5db;
 }
 
 .operator-toggle {
@@ -1104,6 +1400,23 @@ watch(() => props.isOpen, (isOpen) => {
   color: white;
 }
 
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  .rule-content {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .config-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .config-text {
+    text-align: center;
+  }
+}
+
 .options-config {
   margin-top: 1.5rem;
 }
@@ -1153,146 +1466,297 @@ watch(() => props.isOpen, (isOpen) => {
 
 .api-config {
   margin-top: 1.5rem;
-  padding: 1rem;
+  padding: 1.25rem;
   border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: #f9fafb;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
-.api-header {
+.api-content {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.endpoint-group,
+.method-group {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  flex-direction: column;
 }
 
-.api-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-
-.api-toggle-label {
-  font-weight: 500;
-  color: #374151;
-}
-
-.api-test-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+.config-label {
   font-size: 0.75rem;
-  background: #3b82f6;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 0.375rem;
+}
+
+.form-input.compact,
+.form-select.compact {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+}
+
+.input-with-button {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-with-button .form-input {
+  flex: 1;
+}
+
+.test-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background: #6366f1;
   color: white;
   border: none;
   border-radius: 0.375rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  min-width: 38px;
+  height: 38px;
 }
 
-.api-test-btn:hover:not(:disabled) {
-  background: #2563eb;
+.test-btn:hover:not(:disabled) {
+  background: #5b21b6;
+  transform: scale(1.05);
 }
 
-.api-test-btn:disabled {
-  background: #93c5fd;
+.test-btn:disabled {
+  background: #a5b4fc;
   cursor: not-allowed;
 }
 
-.api-fields {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px dashed #d1d5db;
-}
-
-.api-preview {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-}
-
-.api-preview-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-  margin: 0 0 0.75rem 0;
-}
-
-.api-preview-container {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.api-preview-loading {
+.api-status {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  padding: 1rem;
-  color: #6b7280;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-top: 1rem;
 }
 
-.spin-icon {
+.api-status.loading {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.api-status.error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.api-status.success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.status-icon.spin {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.field-mapping-compact {
+  margin-top: 1rem;
 }
 
-.api-preview-error {
+.mapping-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mapping-group {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
   padding: 0.75rem;
-  background: #fee2e2;
-  color: #b91c1c;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
 }
 
-.api-preview-count {
+.mapping-label {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #6b7280;
+  color: #475569;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.field-buttons-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.field-btn {
+  padding: 0.25rem 0.5rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.field-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.field-btn.active {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+
+.results-preview-compact {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 1rem;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.5rem;
 }
 
-.api-preview-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.api-preview-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem;
-  background: #f3f4f6;
-  border-radius: 0.25rem;
-}
-
-.api-preview-label {
-  font-size: 0.875rem;
-  font-weight: 500;
+.preview-title {
+  font-size: 0.75rem;
+  font-weight: 600;
   color: #374151;
 }
 
-.api-preview-value {
-  font-size: 0.75rem;
+.preview-count {
+  font-size: 0.7rem;
   color: #6b7280;
-  background: #e5e7eb;
+  background: #f3f4f6;
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
 }
 
-.api-preview-more {
-  text-align: center;
+.preview-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.375rem 0.5rem;
+  background: #f8fafc;
+  border-radius: 0.25rem;
+  border: 1px solid #e2e8f0;
+}
+
+.item-label {
   font-size: 0.75rem;
-  font-style: italic;
+  color: #374151;
+  font-weight: 500;
+}
+
+.item-value {
+  font-size: 0.7rem;
   color: #6b7280;
-  padding: 0.5rem 0;
+  background: #e5e7eb;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.125rem;
+  font-family: monospace;
+}
+
+.preview-more {
+  text-align: center;
+  font-size: 0.7rem;
+  color: #9ca3af;
+  padding: 0.25rem;
+  font-style: italic;
+}
+
+.advanced-options {
+  margin-top: 1rem;
+}
+
+.advanced-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  color: #6366f1;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.advanced-toggle:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.advanced-settings {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+}
+
+.advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .mapping-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .advanced-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .field-buttons-compact {
+    justify-content: center;
+  }
 }
 
 .modal-footer {

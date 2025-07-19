@@ -264,9 +264,8 @@ model Form {
   // Template source (si créé à partir d'un template)
   templateId  String?
   
-  // ✨ NOUVELLES COLONNES JSON POUR STRUCTURE OPTIMISÉE
-  steps    Json?  // Array of FormStep objects with API config
-  fields   Json?  // Array of FormField objects
+  // ✨ STRUCTURE IDENTIQUE AU LOCALSTORAGE
+  steps Json? // Array des étapes avec leurs champs: [{ id, order, title, description, fields: [...], apiConfig }]
   
   // Métadonnées
   createdAt DateTime @default(now())

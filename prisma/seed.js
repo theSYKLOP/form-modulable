@@ -148,6 +148,7 @@ async function main() {
   })
 
   // Créer des templates de formulaires
+  // ===== TEMPLATES DE FORMULAIRES AVEC STRUCTURE DIRECTE =====
   const contactTemplate = await prisma.formTemplate.upsert({
     where: { id: 'contact-template' },
     update: {},
@@ -159,52 +160,49 @@ async function main() {
       tags: ['contact', 'simple', 'basique'],
       industry: 'Général',
       useCase: 'Contact client',
+      // ✨ CONFIG DIRECTE SANS WRAPPER
       config: {
+        id: 'contact-template',
+        title: 'Template Contact Simple',
+        description: 'Un template de base pour un formulaire de contact',
+        layout: 'VERTICAL',
+        spacing: 'NORMAL',
         steps: [
           {
-            id: 'step1',
+            id: 'step_1752678963911',
+            order: 0,
             title: 'Contact',
-            description: 'Informations de contact',
-            order: 1,
-            fields: ['name', 'email', 'subject', 'message']
-          }
-        ],
-        fields: [
-          {
-            id: 'name',
-            type: 'TEXT',
-            label: 'Nom complet',
-            placeholder: 'Votre nom',
-            required: true,
-            width: 'FULL',
-            order: 1
-          },
-          {
-            id: 'email',
-            type: 'EMAIL',
-            label: 'Email',
-            placeholder: 'votre@email.com',
-            required: true,
-            width: 'FULL',
-            order: 2
-          },
-          {
-            id: 'subject',
-            type: 'TEXT',
-            label: 'Sujet',
-            placeholder: 'Sujet de votre message',
-            required: true,
-            width: 'FULL',
-            order: 3
-          },
-          {
-            id: 'message',
-            type: 'TEXTAREA',
-            label: 'Message',
-            placeholder: 'Votre message...',
-            required: true,
-            width: 'FULL',
-            order: 4
+            description: '',
+            fields: [
+              {
+                id: 'field_name',
+                stepId: 'step_1752678963911',
+                order: 0,
+                width: 'full',
+                name: 'name',
+                label: 'Nom complet',
+                placeholder: 'Votre nom',
+                helpText: '',
+                validation: { required: true },
+                options: [],
+                hasApi: false,
+                apiConfig: {
+                  method: 'GET',
+                  endpoint: '',
+                  cacheTime: 0,
+                  responsePath: '',
+                  labelKey: 'name',
+                  valueKey: 'id'
+                },
+                conditionalLogic: {
+                  enabled: false,
+                  action: 'show',
+                  logicalOperator: 'AND',
+                  rules: []
+                },
+                type: 'text'
+              }
+            ]
           }
         ]
       },
@@ -342,55 +340,99 @@ async function main() {
       mode: 'EDIT',
       layout: 'VERTICAL',
       spacing: 'NORMAL',
+      // ✨ STEPS DIRECTEMENT COMME DANS LOCALSTORAGE
       steps: [
         {
-          id: 'step1',
+          id: 'step_1752678963911',
+          order: 0,
           title: 'Contact',
-          description: 'Remplissez vos informations de contact',
-          order: 1,
-          fields: ['name', 'email', 'subject', 'message']
-        }
-      ],
-      fields: [
-        {
-          id: 'name',
-          type: 'TEXT',
-          label: 'Nom complet',
-          placeholder: 'Votre nom complet',
-          required: true,
-          width: 'FULL',
-          order: 1
-        },
-        {
-          id: 'email',
-          type: 'EMAIL',
-          label: 'Email',
-          placeholder: 'votre@email.com',
-          required: true,
-          width: 'FULL',
-          order: 2
-        },
-        {
-          id: 'subject',
-          type: 'SELECT',
-          label: 'Sujet',
-          required: true,
-          width: 'FULL',
-          order: 3,
-          options: [
-            { value: 'info', label: 'Demande d\'information' },
-            { value: 'support', label: 'Support technique' },
-            { value: 'business', label: 'Partenariat' }
+          description: '',
+          fields: [
+            {
+              id: 'field_name_main',
+              stepId: 'step_1752678963911',
+              order: 0,
+              width: 'full',
+              name: 'name',
+              label: 'Nom complet',
+              placeholder: 'Votre nom complet',
+              helpText: '',
+              validation: { required: true },
+              options: [],
+              hasApi: false,
+              apiConfig: {
+                method: 'GET',
+                endpoint: '',
+                cacheTime: 0,
+                responsePath: '',
+                labelKey: 'name',
+                valueKey: 'id'
+              },
+              conditionalLogic: {
+                enabled: false,
+                action: 'show',
+                logicalOperator: 'AND',
+                rules: []
+              },
+              type: 'text'
+            },
+            {
+              id: 'field_email_main',
+              stepId: 'step_1752678963911',
+              order: 1,
+              width: 'full',
+              name: 'email',
+              label: 'Email',
+              placeholder: 'votre@email.com',
+              helpText: '',
+              validation: { required: true },
+              options: [],
+              hasApi: false,
+              apiConfig: {
+                method: 'GET',
+                endpoint: '',
+                cacheTime: 0,
+                responsePath: '',
+                labelKey: 'name',
+                valueKey: 'id'
+              },
+              conditionalLogic: {
+                enabled: false,
+                action: 'show',
+                logicalOperator: 'AND',
+                rules: []
+              },
+              type: 'email'
+            },
+            {
+              id: 'field_message_main',
+              stepId: 'step_1752678963911',
+              order: 2,
+              width: 'full',
+              name: 'message',
+              label: 'Message',
+              placeholder: 'Votre message...',
+              helpText: '',
+              validation: { required: true },
+              options: [],
+              hasApi: false,
+              apiConfig: {
+                method: 'GET',
+                endpoint: '',
+                cacheTime: 0,
+                responsePath: '',
+                labelKey: 'name',
+                valueKey: 'id'
+              },
+              conditionalLogic: {
+                enabled: false,
+                action: 'show',
+                logicalOperator: 'AND',
+                rules: []
+              },
+              type: 'textarea'
+            }
           ]
-        },
-        {
-          id: 'message',
-          type: 'TEXTAREA',
-          label: 'Message',
-          placeholder: 'Votre message...',
-          required: true,
-          width: 'FULL',
-          order: 4
         }
       ],
       publishedAt: new Date()
@@ -403,7 +445,7 @@ async function main() {
     update: {},
     create: {
       id: 'registration-form-1',
-      title: 'Inscription Événement',
+      title: 'Inscription Événement Tech 2024',
       description: 'Formulaire d\'inscription pour notre événement annuel',
       userId: admin.id,
       templateId: registrationTemplate.id,
@@ -411,165 +453,140 @@ async function main() {
       mode: 'EDIT',
       layout: 'VERTICAL',
       spacing: 'NORMAL',
+      // ✨ STEPS DIRECTEMENT COMME DANS LOCALSTORAGE
       steps: [
         {
-          id: 'step1',
+          id: 'step_1752678963911',
+          order: 0,
           title: 'Informations personnelles',
-          description: 'Vos informations de base',
+          description: '',
+          fields: [
+            {
+              id: 'field_firstname_reg',
+              stepId: 'step_1752678963911',
+              order: 0,
+              width: 'half',
+              name: 'firstname',
+              label: 'Prénom',
+              placeholder: 'Votre prénom',
+              helpText: '',
+              validation: { required: true },
+              options: [],
+              hasApi: false,
+              apiConfig: {
+                method: 'GET',
+                endpoint: '',
+                cacheTime: 0,
+                responsePath: '',
+                labelKey: 'name',
+                valueKey: 'id'
+              },
+              conditionalLogic: {
+                enabled: false,
+                action: 'show',
+                logicalOperator: 'AND',
+                rules: []
+              },
+              type: 'text'
+            },
+            {
+              id: 'field_lastname_reg',
+              stepId: 'step_1752678963911',
+              order: 1,
+              width: 'half',
+              name: 'lastname',
+              label: 'Nom',
+              placeholder: 'Votre nom',
+              helpText: '',
+              validation: { required: true },
+              options: [],
+              hasApi: false,
+              apiConfig: {
+                method: 'GET',
+                endpoint: '',
+                cacheTime: 0,
+                responsePath: '',
+                labelKey: 'name',
+                valueKey: 'id'
+              },
+              conditionalLogic: {
+                enabled: false,
+                action: 'show',
+                logicalOperator: 'AND',
+                rules: []
+              },
+              type: 'text'
+            },
+            {
+              id: 'field_email_reg',
+              stepId: 'step_1752678963911',
+              order: 2,
+              width: 'full',
+              name: 'email',
+              label: 'Email',
+              placeholder: 'votre@email.com',
+              helpText: '',
+              validation: { required: true },
+              options: [],
+              hasApi: false,
+              apiConfig: {
+                method: 'GET',
+                endpoint: '',
+                cacheTime: 0,
+                responsePath: '',
+                labelKey: 'name',
+                valueKey: 'id'
+              },
+              conditionalLogic: {
+                enabled: false,
+                action: 'show',
+                logicalOperator: 'AND',
+                rules: []
+              },
+              type: 'email'
+            }
+          ]
+        },
+        {
+          id: 'step_1752678976498',
           order: 1,
-          fields: ['firstname', 'lastname', 'email', 'phone']
-        },
-        {
-          id: 'step2',
-          title: 'Informations professionnelles',
-          description: 'Votre contexte professionnel',
-          order: 2,
-          fields: ['company', 'position', 'industry', 'experience']
-        },
-        {
-          id: 'step3',
           title: 'Préférences',
-          description: 'Vos préférences pour l\'événement',
-          order: 3,
-          fields: ['dietary', 'sessions', 'networking', 'newsletter']
-        }
-      ],
-      fields: [
-        // Étape 1 - Informations personnelles
-        {
-          id: 'firstname',
-          type: 'TEXT',
-          label: 'Prénom',
-          placeholder: 'Votre prénom',
-          required: true,
-          width: 'HALF',
-          order: 1
-        },
-        {
-          id: 'lastname',
-          type: 'TEXT',
-          label: 'Nom',
-          placeholder: 'Votre nom',
-          required: true,
-          width: 'HALF',
-          order: 2
-        },
-        {
-          id: 'email',
-          type: 'EMAIL',
-          label: 'Email',
-          placeholder: 'votre@email.com',
-          required: true,
-          width: 'FULL',
-          order: 3
-        },
-        {
-          id: 'phone',
-          type: 'TEL',
-          label: 'Téléphone',
-          placeholder: '+33 1 23 45 67 89',
-          required: false,
-          width: 'FULL',
-          order: 4
-        },
-        
-        // Étape 2 - Informations professionnelles
-        {
-          id: 'company',
-          type: 'TEXT',
-          label: 'Entreprise',
-          placeholder: 'Nom de votre entreprise',
-          required: false,
-          width: 'FULL',
-          order: 5
-        },
-        {
-          id: 'position',
-          type: 'TEXT',
-          label: 'Poste',
-          placeholder: 'Votre poste actuel',
-          required: false,
-          width: 'HALF',
-          order: 6
-        },
-        {
-          id: 'industry',
-          type: 'SELECT',
-          label: 'Secteur d\'activité',
-          required: false,
-          width: 'HALF',
-          order: 7,
-          options: [
-            { value: 'tech', label: 'Technologie' },
-            { value: 'finance', label: 'Finance' },
-            { value: 'healthcare', label: 'Santé' },
-            { value: 'education', label: 'Éducation' },
-            { value: 'retail', label: 'Commerce' },
-            { value: 'other', label: 'Autre' }
+          description: '',
+          fields: [
+            {
+              id: 'field_dietary_reg',
+              stepId: 'step_1752678976498',
+              order: 0,
+              width: 'full',
+              name: 'dietary',
+              label: 'Régime alimentaire',
+              placeholder: '',
+              helpText: '',
+              validation: { required: true },
+              options: [
+                { value: 'none', label: 'Aucun' },
+                { value: 'vegetarian', label: 'Végétarien' },
+                { value: 'vegan', label: 'Végan' },
+                { value: 'gluten_free', label: 'Sans gluten' }
+              ],
+              hasApi: false,
+              apiConfig: {
+                method: 'GET',
+                endpoint: '',
+                cacheTime: 0,
+                responsePath: '',
+                labelKey: 'name',
+                valueKey: 'id'
+              },
+              conditionalLogic: {
+                enabled: false,
+                action: 'show',
+                logicalOperator: 'AND',
+                rules: []
+              },
+              type: 'radio'
+            }
           ]
-        },
-        {
-          id: 'experience',
-          type: 'RADIO',
-          label: 'Expérience professionnelle',
-          required: true,
-          width: 'FULL',
-          order: 8,
-          options: [
-            { value: 'junior', label: 'Moins de 2 ans' },
-            { value: 'intermediate', label: '2-5 ans' },
-            { value: 'senior', label: '5-10 ans' },
-            { value: 'expert', label: 'Plus de 10 ans' }
-          ]
-        },
-        
-        // Étape 3 - Préférences
-        {
-          id: 'dietary',
-          type: 'RADIO',
-          label: 'Régime alimentaire',
-          required: true,
-          width: 'FULL',
-          order: 9,
-          options: [
-            { value: 'none', label: 'Aucun' },
-            { value: 'vegetarian', label: 'Végétarien' },
-            { value: 'vegan', label: 'Végan' },
-            { value: 'gluten_free', label: 'Sans gluten' },
-            { value: 'other', label: 'Autre (préciser en commentaire)' }
-          ]
-        },
-        {
-          id: 'sessions',
-          type: 'MULTISELECT',
-          label: 'Sessions d\'intérêt',
-          required: true,
-          width: 'FULL',
-          order: 10,
-          options: [
-            { value: 'ai', label: 'Intelligence Artificielle' },
-            { value: 'blockchain', label: 'Blockchain' },
-            { value: 'cybersecurity', label: 'Cybersécurité' },
-            { value: 'cloud', label: 'Cloud Computing' },
-            { value: 'ux', label: 'UX/UI Design' },
-            { value: 'data', label: 'Data Science' }
-          ]
-        },
-        {
-          id: 'networking',
-          type: 'CHECKBOX',
-          label: 'Je souhaite participer au networking',
-          required: false,
-          width: 'FULL',
-          order: 11
-        },
-        {
-          id: 'newsletter',
-          type: 'CHECKBOX',
-          label: 'Je souhaite recevoir la newsletter',
-          required: false,
-          width: 'FULL',
-          order: 12
         }
       ],
       publishedAt: new Date()
