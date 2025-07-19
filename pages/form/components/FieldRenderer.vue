@@ -29,28 +29,34 @@
       <input
         v-if="['text', 'email', 'password', 'number', 'tel', 'url'].includes(field.type)"
         :type="field.type"
+        :value="currentValue"
         :placeholder="field.placeholder"
-        :disabled="isBuilder"
+        :disabled="isFieldDisabled"
         :min="field.type === 'number' ? field.min : undefined"
         :max="field.type === 'number' ? field.max : undefined"
         :step="field.type === 'number' ? field.step : undefined"
+        @input="updateValue"
         class="form-input"
       />
 
       <!-- Textarea -->
       <textarea
         v-else-if="field.type === 'textarea'"
+        :value="currentValue"
         :placeholder="field.placeholder"
-        :disabled="isBuilder"
+        :disabled="isFieldDisabled"
         :rows="field.rows || 4"
+        @input="updateValue"
         class="form-textarea"
       />
 
       <!-- Select -->
       <select
         v-else-if="field.type === 'select'"
-        :disabled="isBuilder"
+        :value="currentValue"
+        :disabled="isFieldDisabled"
         :multiple="field.multiple"
+        @change="updateValue"
         class="form-select"
       >
         <option value="">{{ field.placeholder || 'Choisir...' }}</option>
@@ -66,8 +72,10 @@
       <!-- Multiselect -->
       <select
         v-else-if="field.type === 'multiselect'"
-        :disabled="isBuilder"
+        :value="currentValue"
+        :disabled="isFieldDisabled"
         multiple
+        @change="updateValue"
         class="form-select"
       >
         <option 
@@ -90,7 +98,9 @@
             type="radio"
             :name="field.id"
             :value="option.value"
-            :disabled="isBuilder"
+            :checked="currentValue === option.value"
+            :disabled="isFieldDisabled"
+            @change="updateValue"
             class="radio-input"
           />
           <span class="radio-label">{{ option.label }}</span>
@@ -107,7 +117,9 @@
           <input 
             type="checkbox"
             :value="option.value"
-            :disabled="isBuilder"
+            :checked="Array.isArray(currentValue) ? currentValue.includes(option.value) : currentValue === option.value"
+            :disabled="isFieldDisabled"
+            @change="updateValue"
             class="checkbox-input"
           />
           <span class="checkbox-label">{{ option.label }}</span>
@@ -118,7 +130,7 @@
       <input
         v-else-if="['date', 'datetime-local'].includes(field.type)"
         :type="field.type"
-        :disabled="isBuilder"
+        :disabled="isFieldDisabled"
         class="form-input"
       />
 
@@ -128,7 +140,7 @@
         type="file"
         :accept="field.accept"
         :multiple="field.multiple"
-        :disabled="isBuilder"
+        :disabled="isFieldDisabled"
         class="form-input"
       />
 
@@ -136,7 +148,7 @@
       <label v-else-if="field.type === 'switch'" class="switch">
         <input 
           type="checkbox"
-          :disabled="isBuilder"
+          :disabled="isFieldDisabled"
           class="switch-input"
         />
         <span class="switch-slider"></span>
@@ -149,7 +161,7 @@
         :min="field.min || 0"
         :max="field.max || 100"
         :step="field.step || 1"
-        :disabled="isBuilder"
+        :disabled="isFieldDisabled"
         class="form-range"
       />
     </div>
@@ -169,10 +181,12 @@ import type { FormFieldData, ConditionalLogic } from '../../../types/form'
 
 interface Props {
   field: FormFieldData
+  value?: any
   isBuilder?: boolean
   isPreview?: boolean
   formValues?: Record<string, any>
   showLabels?: boolean
+  disabled?: boolean
     conditionalLogic?: {
       enabled: boolean
       action: 'show' | 'hide'
@@ -189,11 +203,60 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  update: [fieldId: string, value: any]
+  'update:value': [value: any]
   delete: [fieldId: string]
   duplicate: [fieldId: string]
   click: [fieldId: string]
 }>()
+
+// Mode builder ou preview
+const isBuilder = computed(() => props.isBuilder ?? true)
+
+// Calculer si le champ doit être désactivé
+const isFieldDisabled = computed(() => {
+  // En mode preview, toujours permettre l'interaction
+  if (props.isPreview) return props.disabled || false
+  // En mode builder, toujours désactiver
+  return isBuilder.value || props.disabled || false
+})
+
+// Valeur courante du champ
+const currentValue = computed({
+  get: () => props.value ?? props.field.defaultValue ?? '',
+  set: (value) => emit('update:value', value)
+})
+
+// Méthode pour mettre à jour la valeur
+const updateValue = (event: Event) => {
+  // Permettre les modifications en mode preview même si isBuilder est true
+  if (isBuilder.value && !props.isPreview) return;
+  
+  const target = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+  let newValue: any = target.value;
+  
+  // Gestion spéciale pour les checkboxes multiples
+  if (props.field.type === 'checkbox' && props.field.options && props.field.options.length > 1) {
+    const currentValues = Array.isArray(currentValue.value) ? currentValue.value : [];
+    if ((target as HTMLInputElement).checked) {
+      newValue = [...currentValues, target.value];
+    } else {
+      newValue = currentValues.filter((v: any) => v !== target.value);
+    }
+  }
+  // Gestion spéciale pour select multiple
+  else if (props.field.type === 'multiselect') {
+    const select = target as HTMLSelectElement;
+    newValue = Array.from(select.selectedOptions).map(option => option.value);
+  }
+  // Conversion selon le type
+  else if (props.field.type === 'number') {
+    newValue = newValue === '' ? null : Number(newValue);
+  } else if (props.field.type === 'checkbox' && (!props.field.options || props.field.options.length <= 1)) {
+    newValue = (target as HTMLInputElement).checked;
+  }
+  
+  currentValue.value = newValue;
+};
 
 // Détermine si le champ devrait être affiché en fonction de sa logique conditionnelle
 const isVisible = computed(() => {
@@ -257,11 +320,6 @@ const isVisible = computed(() => {
 .field-renderer.third {
   width: 32%;
   display: inline-block;
-}
-
-.field-renderer.preview {
-  opacity: 0.8;
-  pointer-events: none;
 }
 
 .field-header {

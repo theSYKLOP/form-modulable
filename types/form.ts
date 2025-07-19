@@ -44,12 +44,25 @@ export interface FormField extends FormFieldData {}
 
 // ...existing code...
 
+export interface StepApiConfig {
+  enabled: boolean
+  endpoint: string
+  method: 'POST'
+  headers?: Record<string, string>
+  params?: Record<string, any>
+  fieldsToSend: string[] // IDs des champs à envoyer
+  validationRequired?: boolean // Si true, l'étape ne peut pas être validée sans succès API
+  successMessage?: string
+  errorMessage?: string
+}
+
 export interface FormStep {
   id: string
   title: string
   description?: string
   order: number
   fields: FormField[]
+  apiConfig?: StepApiConfig
 }
 
 export interface FormConfig {

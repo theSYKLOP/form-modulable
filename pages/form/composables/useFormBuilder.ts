@@ -15,7 +15,7 @@ interface FormApiResponse extends ApiResponse {
   data?: FormConfig
 }
 
-export function useFormBuilder() {
+export const useFormBuilder = () => {
   // États
   const formConfig = ref<FormConfig | null>(null)
   const activeStepIndex = ref(0)
@@ -257,6 +257,15 @@ export function useFormBuilder() {
     }
   }
 
+  const updateStep = (stepId: string, updates: Partial<FormStep>) => {
+    if (!formConfig.value) return
+    
+    const step = formConfig.value.steps.find(s => s.id === stepId)
+    if (step) {
+      Object.assign(step, updates)
+    }
+  }
+
   // Gestion des champs
   const addField = (fieldData: Partial<FormFieldData>) => {
     if (!activeStep.value) return
@@ -340,6 +349,38 @@ export function useFormBuilder() {
     return Promise.resolve(createNewFormFromScratch())
   }
 
+  // 🔧 Fonction pour s'assurer que la structure est correcte pour le preview
+  const getPreviewFormConfig = computed(() => {
+    console.log('🔧 getPreviewFormConfig computed - formConfig:', formConfig.value)
+    
+    if (!formConfig.value) {
+      console.log('🔧 getPreviewFormConfig - No formConfig')
+      return null
+    }
+
+    // S'assurer que les steps sont un array
+    const steps = Array.isArray(formConfig.value.steps) 
+      ? formConfig.value.steps 
+      : []
+
+    console.log('🔧 getPreviewFormConfig - Steps:', steps)
+
+    // S'assurer que chaque step a les propriétés nécessaires
+    const normalizedSteps = steps.map(step => ({
+      ...step,
+      fields: Array.isArray(step.fields) ? step.fields : [],
+      apiConfig: step.apiConfig || null
+    }))
+
+    const result = {
+      ...formConfig.value,
+      steps: normalizedSteps
+    }
+    
+    console.log('🔧 getPreviewFormConfig - Result:', result)
+    return result
+  })
+
   return {
     // État
     formConfig,
@@ -364,11 +405,15 @@ export function useFormBuilder() {
     addStep,
     deleteStep,
     updateStepTitle,
+    updateStep,
     
     // Gestion des champs
     addField,
     updateField,
     deleteField,
-    duplicateField
+    duplicateField,
+
+    // 🆕 Ajout de cette computed pour le preview
+    getPreviewFormConfig,
   }
 }

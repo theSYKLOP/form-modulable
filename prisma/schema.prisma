@@ -265,7 +265,7 @@ model Form {
   templateId  String?
   
   // ✨ NOUVELLES COLONNES JSON POUR STRUCTURE OPTIMISÉE
-  steps    Json?  // Array of FormStep objects
+  steps    Json?  // Array of FormStep objects with API config
   fields   Json?  // Array of FormField objects
   
   // Métadonnées

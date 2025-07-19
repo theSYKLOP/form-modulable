@@ -206,6 +206,7 @@
       v-if="modalType === 'step'"
       :isOpen="isModalOpen"
       :step="editingStep"
+      :availableFields="sortedFields"
       @close="closeModal"
       @save="handleUpdateStep"
     />
@@ -256,6 +257,7 @@ const props = defineProps<Props>()
 // Émissions vers le parent
 const emit = defineEmits<{
   'update-step-title': [stepId: string, title: string]
+  'update-step': [stepId: string, data: Partial<FormStep>]
   'add-step': []
   'delete-step': [stepId: string]
   'add-field': [field: FormField]
@@ -498,10 +500,9 @@ const addFieldAtPosition = (fieldData: FormField, position: number) => {
 }
 
 // Fonction pour gérer la modification d'étape
-const handleUpdateStep = (stepData: { title: string; description?: string }) => {
+const handleUpdateStep = (stepData: Partial<FormStep>) => {
   if (editingStepId.value) {
-    emit('update-step-title', editingStepId.value, stepData.title)
-    // Vous pouvez aussi mettre à jour la description si nécessaire
+    emit('update-step', editingStepId.value, stepData)
   }
   closeModal()
 }

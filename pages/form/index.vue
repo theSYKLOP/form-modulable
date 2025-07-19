@@ -66,42 +66,62 @@
             <Icon name="i-heroicons-cloud-arrow-up" />
             {{ isSaving ? 'Sauvegarde...' : 'Sauvegarder' }}
           </button>
-          <button @click="previewForm" class="preview-btn">
-            <Icon name="i-heroicons-eye" />
-            Aperçu
+          <button @click="previewForm" class="preview-btn" :class="{ active: isPreviewMode }">
+            <Icon :name="isPreviewMode ? 'i-heroicons-pencil-square' : 'i-heroicons-eye'" />
+            {{ isPreviewMode ? 'Édition' : 'Aperçu' }}
           </button>
         </div>
       </div>
 
-      
+      <!-- 🔧 Conteneur principal avec debug -->
+      <div class="main-content">
+        <!-- Debug des conditions -->
+        <div v-if="true" class="debug-banner">
+          <span>Mode: {{ isPreviewMode ? 'PREVIEW' : 'EDIT' }}</span>
+          <span>|</span>
+          <span>FormConfig: {{ formConfig ? 'EXISTS' : 'NULL' }}</span>
+          <span>|</span>
+          <span>ActiveStep: {{ activeStep ? 'EXISTS' : 'NULL' }}</span>
+          <span>|</span>
+          <span>PreviewConfig: {{ getPreviewFormConfig ? 'EXISTS' : 'NULL' }}</span>
+        </div>
 
-      <FormCanvas 
-        v-if="formConfig && activeStep" 
-        :form-config="formConfig"
-        :active-step-index="activeStepIndex"
-        :active-step="activeStep"
-        :selected-field-id="selectedFieldId"
-        @update-step-title="updateStepTitle"
-        @add-step="addStep"
-        @delete-step="deleteStep"
-        @add-field="addField"
-        @update-field="updateField"
-        @delete-field="deleteField"
-        @duplicate-field="duplicateField"
-        @select-field="(fieldId) => selectedFieldId = fieldId"
-        @step-click="(index: number) => activeStepIndex = index"
-      />
-      
-      <!-- Placeholder si pas de config -->
-      <div v-else class="no-config-placeholder">
-        <div class="placeholder-content">
-          <Icon name="i-heroicons-document-text" class="placeholder-icon" />
-          <h3>Initialisation du formulaire...</h3>
-          <p>Le constructeur de formulaire est en cours de préparation.</p>
-          <button @click="forceInit" class="init-btn">
-            <Icon name="i-heroicons-refresh" />
-            Réessayer l'initialisation
-          </button>
+        <!-- Mode Édition -->
+        <FormCanvas 
+          v-show="!isPreviewMode && formConfig && activeStep" 
+          :form-config="formConfig"
+          :active-step-index="activeStepIndex"
+          :active-step="activeStep"
+          :selected-field-id="selectedFieldId"
+          @update-step-title="updateStepTitle"
+          @update-step="updateStep"
+          @add-step="addStep"
+          @delete-step="deleteStep"
+          @add-field="addField"
+          @update-field="updateField"
+          @delete-field="deleteField"
+          @duplicate-field="duplicateField"
+          @select-field="(fieldId) => selectedFieldId = fieldId"
+          @step-click="(index: number) => activeStepIndex = index"
+        />
+
+        <!-- Mode Prévisualisation -->
+        <FormPreview 
+          v-show="isPreviewMode"
+          :form-config="getPreviewFormConfig"
+        />
+        
+        <!-- Message si rien ne s'affiche -->
+        <div v-show="!isPreviewMode && (!formConfig || !activeStep)" class="no-config-placeholder">
+          <div class="placeholder-content">
+            <Icon name="i-heroicons-document-text" class="placeholder-icon" />
+            <h3>Initialisation du formulaire...</h3>
+            <p>Le constructeur de formulaire est en cours de préparation.</p>
+            <button @click="forceInit" class="init-btn">
+              <Icon name="i-heroicons-refresh" />
+              Réessayer l'initialisation
+            </button>
+          </div>
         </div>
       </div>
 
@@ -138,8 +158,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import FormCanvas from './components/FormCanvas.vue'
+import FormPreview from './components/FormPreview.vue'
 import { useFormBuilder } from './composables/useFormBuilder'
 
 // Configuration de la page
@@ -168,10 +189,12 @@ const {
   addStep,
   deleteStep,
   updateStepTitle,
+  updateStep,
   addField,
   updateField,
   deleteField,
-  duplicateField
+  duplicateField,
+  getPreviewFormConfig, // 🆕 Import de la version normalisée
 } = useFormBuilder()
 
 // États locaux
@@ -179,6 +202,7 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 const showSuccess = ref(false)
 const showNewConfirm = ref(false)
+const isPreviewMode = ref(false)
 
 // Fonction de sauvegarde définitive
 const saveForm = async () => {
@@ -214,9 +238,8 @@ const cancelNew = () => {
 }
 
 const previewForm = () => {
-  // Ouvrir l'aperçu dans un nouvel onglet
-  const previewUrl = `/form/preview?config=${encodeURIComponent(JSON.stringify(formConfig.value))}`
-  window.open(previewUrl, '_blank')
+  // Basculer en mode prévisualisation
+  isPreviewMode.value = !isPreviewMode.value
 }
 
 const formatRelativeTime = (date: Date) => {
@@ -299,6 +322,14 @@ const debugFormConfig = () => {
   console.log('🔧 Current activeStepIndex:', activeStepIndex.value)
   console.log('🔧 Current activeStep:', activeStep.value)
 }
+
+// 🔧 Ajouter un debug pour voir les valeurs
+watch(() => isPreviewMode.value, (newValue) => {
+  console.log('🔧 isPreviewMode changed:', newValue)
+  console.log('🔧 formConfig exists:', !!formConfig.value)
+  console.log('🔧 getPreviewFormConfig exists:', !!getPreviewFormConfig.value)
+  console.log('🔧 getPreviewFormConfig value:', getPreviewFormConfig.value)
+})
 
 // Initialisation
 onMounted(async () => {
@@ -643,6 +674,15 @@ onBeforeUnmount(() => {
   transform: translateY(-1px);
 }
 
+.preview-btn.active {
+  background: rgba(59, 130, 246, 0.9);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.preview-btn.active:hover {
+  background: rgba(37, 99, 235, 0.9);
+}
+
 /* Success message */
 .success-message {
   position: fixed;
@@ -808,5 +848,43 @@ onBeforeUnmount(() => {
     order: -1;
     align-self: flex-start;
   }
+}
+
+/* 🔧 Styles pour le debug */
+.debug-conditions {
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.debug-conditions p {
+  margin: 0.25rem 0;
+  color: #0c4a6e;
+}
+
+.main-content {
+  flex: 1;
+  position: relative;
+}
+
+.debug-banner {
+  position: fixed;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-family: monospace;
+  z-index: 1000;
+  display: flex;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 </style>

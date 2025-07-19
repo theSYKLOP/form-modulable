@@ -10,7 +10,15 @@
       >
         <div class="step-number">{{ index + 1 }}</div>
         <div class="step-info">
-          <div class="step-title">{{ step.title }}</div>
+          <div class="step-title">
+            {{ step.title }}
+            <Icon 
+              v-if="step.apiConfig?.enabled"
+              name="heroicons:link"
+              class="api-indicator"
+              :class="{ 'validation-required': step.apiConfig.validationRequired }"
+            />
+          </div>
           <div class="step-fields">{{ step.fields.length }} champs</div>
         </div>
         <div class="step-actions">
@@ -113,6 +121,19 @@ defineEmits<{
 .step-title {
   font-size: 0.875rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-indicator {
+  width: 1rem;
+  height: 1rem;
+  color: #10b981;
+}
+
+.api-indicator.validation-required {
+  color: #f59e0b;
 }
 
 .step-fields {
