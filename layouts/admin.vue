@@ -209,10 +209,48 @@ const route = useRoute()
 const sidebarOpen = ref(false)
 const showUserMenu = ref(false)
 
-// Données fictives pour les badges
-const formCount = ref(12)
-const userCount = ref(45)
-const notificationCount = ref(3)
+// ✅ Données réelles pour les badges (remplace les données fictives)
+const formCount = ref(0)
+const userCount = ref(0)
+const notificationCount = ref(3) // Peut rester fictif pour l'instant
+const isLoadingStats = ref(false)
+
+// ✅ Charger les statistiques réelles
+const loadStats = async () => {
+  if (isLoadingStats.value) return // Éviter les appels multiples
+  
+  isLoadingStats.value = true
+  try {
+    // Charger le nombre de formulaires
+    try {
+      const formsResponse = await $fetch('/api/form?page=1&limit=1')
+      if (formsResponse?.success && formsResponse.data) {
+        formCount.value = formsResponse.data.pagination.totalCount
+      }
+    } catch (formError) {
+      console.error('Erreur lors du chargement des formulaires:', formError)
+      // Garder la valeur précédente en cas d'erreur
+    }
+    
+    // Charger le nombre d'utilisateurs
+    try {
+      const usersResponse = await $fetch('/api/admin/users?page=1&limit=1')
+      if (usersResponse?.success && usersResponse.data) {
+        userCount.value = usersResponse.data.pagination.totalCount
+      }
+    } catch (userError) {
+      console.error('Erreur lors du chargement des utilisateurs:', userError)
+      // Si l'API utilisateurs n'existe pas encore ou erreur d'auth, garder 0
+      if (userError.statusCode === 403 || userError.statusCode === 401) {
+        userCount.value = 0
+      }
+    }
+  } catch (error) {
+    console.error('Erreur générale lors du chargement des statistiques:', error)
+  } finally {
+    isLoadingStats.value = false
+  }
+}
 
 // Titre et description de la page selon la route
 const pageTitle = computed(() => {
@@ -247,10 +285,18 @@ const handleLogout = async () => {
 watch(route, () => {
   sidebarOpen.value = false
   showUserMenu.value = false
+  
+  // ✅ Rafraîchir les statistiques quand on navigue (utile après ajout/suppression)
+  if (route.path.startsWith('/admin/')) {
+    loadStats()
+  }
 })
 
 // Fermer le menu utilisateur quand on clique ailleurs
 onMounted(() => {
+  // ✅ Charger les statistiques au montage
+  loadStats()
+  
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.relative')) {
       showUserMenu.value = false
@@ -267,4 +313,7 @@ onMounted(() => {
     })
   }
 })
+
+// ✅ Exposer la fonction de rechargement des stats pour les pages enfants
+provide('refreshAdminStats', loadStats)
 </script>

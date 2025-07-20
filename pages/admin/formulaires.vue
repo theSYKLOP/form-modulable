@@ -415,6 +415,9 @@ const previewingForm = ref<FormSummary | null>(null)
 const previewFormConfig = ref<any>(null)
 const loadingPreview = ref(false)
 
+// ✅ Récupérer la fonction de rafraîchissement des stats depuis le layout
+const refreshAdminStats = inject<() => Promise<void>>('refreshAdminStats')
+
 // Debounced search
 let searchTimeout: NodeJS.Timeout
 const debouncedSearch = () => {
@@ -527,6 +530,10 @@ const duplicateForm = async (form: FormSummary) => {
     if (response?.success) {
       showNotification('success', 'Formulaire dupliqué avec succès')
       await loadForms() // Recharger la liste
+      // ✅ Rafraîchir les statistiques dans la sidebar
+      if (refreshAdminStats) {
+        await refreshAdminStats()
+      }
     } else {
       throw new Error(response?.message || 'Erreur lors de la duplication')
     }
@@ -567,6 +574,10 @@ const confirmDelete = async () => {
       }
       
       await loadForms()
+      // ✅ Rafraîchir les statistiques dans la sidebar
+      if (refreshAdminStats) {
+        await refreshAdminStats()
+      }
     } else {
       throw new Error(response?.message || 'Erreur lors de la suppression')
     }
@@ -1196,18 +1207,61 @@ onMounted(() => {
 
 .preview-content-wrapper {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   background: #f8fafc;
+  /* ✅ Amélioration du scroll pour les formulaires longs */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.preview-content-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.preview-content-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.preview-content-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.preview-content-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .preview-content-wrapper :deep(.form-preview) {
-  height: 100%;
+  height: auto;
+  min-height: 100%;
   box-shadow: none;
   border-radius: 0;
 }
 
 .preview-content-wrapper :deep(.preview-container) {
   background: transparent;
+  padding: 1.5rem 2rem;
+  min-height: auto;
+}
+
+/* ✅ Amélioration pour les formulaires multi-étapes longs */
+.preview-content-wrapper :deep(.preview-form) {
+  max-width: none;
+  width: 100%;
+}
+
+.preview-content-wrapper :deep(.form-header) {
+  margin-bottom: 1.5rem;
+}
+
+.preview-content-wrapper :deep(.form-actions) {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  position: sticky;
+  bottom: 0;
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+  z-index: 10;
 }
 
 .preview-modal-footer {
@@ -1453,6 +1507,25 @@ onMounted(() => {
 
   .preview-actions button {
     flex: 1;
+  }
+
+  /* ✅ Amélioration du scroll sur mobile */
+  .preview-content-wrapper :deep(.preview-container) {
+    padding: 1rem 1.5rem;
+  }
+
+  .preview-content-wrapper :deep(.form-actions) {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  /* ✅ Amélioration pour les petits écrans */
+  .preview-content-wrapper :deep(.form-title) {
+    font-size: 1.5rem;
+  }
+
+  .preview-content-wrapper :deep(.progress-indicator) {
+    margin: 0 auto 1.5rem;
   }
 }
 
