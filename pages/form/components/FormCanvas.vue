@@ -106,9 +106,9 @@
                         {{ field.label || 'Sans label' }}
                         <span v-if="field.required" class="required-indicator">*</span>
                       </h4>
-                      <p v-if="field.placeholder" class="field-description">
+                      <!-- <p v-if="field.placeholder" class="field-description">
                         {{ field.placeholder }}
-                      </p>
+                      </p> -->
                     </div>
                     
                     <!-- Badge du type de champ

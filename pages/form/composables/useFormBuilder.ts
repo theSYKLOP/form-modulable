@@ -155,6 +155,14 @@ export const useFormBuilder = () => {
     try {
       isSaving.value = true
       
+      // Récupérer l'utilisateur connecté
+      const authStore = useAuthStore()
+      const currentUser = authStore.user
+      
+      if (!currentUser?.id) {
+        throw new Error('Vous devez être connecté pour sauvegarder un formulaire')
+      }
+      
       const configToSave = { ...formConfig.value }
       
       // Déterminer si c'est une création ou une mise à jour
@@ -162,9 +170,15 @@ export const useFormBuilder = () => {
       const url = isNew ? '/api/form' : `/api/form/${configToSave.id}`
       const method = isNew ? 'POST' : 'PUT'
 
+      // Ajouter le userId pour les nouvelles créations
+      const bodyData = isNew ? {
+        ...configToSave,
+        userId: currentUser.id
+      } : configToSave
+
       const response = await $fetch<FormApiResponse>(url, {
         method,
-        body: configToSave
+        body: bodyData
       })
 
       if (response.success && response.data) {

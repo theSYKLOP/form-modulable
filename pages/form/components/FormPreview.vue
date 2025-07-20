@@ -227,14 +227,6 @@ const allFields = computed(() => {
 const updateFieldValue = (fieldName: string, value: any) => {
   formData.value[fieldName] = value
   
-  // Debug pour la logique conditionnelle
-  console.log('🔄 Field updated:', {
-    fieldName,
-    value,
-    allFormData: formData.value,
-    allFields: allFields.value
-  })
-  
   // Effacer les messages globaux quand l'utilisateur modifie des données
   if (globalMessage.value) {
     globalMessage.value = null

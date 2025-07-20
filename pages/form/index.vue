@@ -239,8 +239,22 @@ const saveForm = async () => {
     setTimeout(() => {
       showSuccess.value = false
     }, 3000)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur de sauvegarde:', error)
+    
+    // Afficher un message d'erreur plus explicite
+    let errorMessage = 'Erreur lors de la sauvegarde'
+    
+    if (error.message?.includes('connecté')) {
+      errorMessage = 'Vous devez être connecté pour sauvegarder'
+    } else if (error.statusCode === 400) {
+      errorMessage = error.message || 'Données invalides'
+    } else if (error.statusCode === 401) {
+      errorMessage = 'Session expirée, veuillez vous reconnecter'
+    }
+    
+    // Ici on pourrait afficher une notification d'erreur
+    alert(errorMessage) // Temporaire - à remplacer par un toast
   }
 }
 
@@ -295,8 +309,15 @@ const saveTitle = async () => {
       setTimeout(() => {
         showSuccess.value = false
       }, 3000)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur sauvegarde titre:', error)
+      
+      // Message d'erreur simplifié pour la sauvegarde du titre
+      let errorMessage = 'Erreur lors de la sauvegarde du titre'
+      if (error.message?.includes('connecté')) {
+        errorMessage = 'Vous devez être connecté pour sauvegarder'
+      }
+      alert(errorMessage) // Temporaire - à remplacer par un toast
     }
   }
   
