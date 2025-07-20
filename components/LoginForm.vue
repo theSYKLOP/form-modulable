@@ -167,7 +167,9 @@ const emit = defineEmits(['switchToRegister'])
 // Store d'authentification
 const authStore = useAuthStore()
 const { login } = authStore
-const { isLoginLoading } = storeToRefs(authStore)
+
+// Accès direct aux propriétés du store au lieu de storeToRefs
+const isLoginLoading = computed(() => authStore.isLoginLoading)
 
 // État du formulaire - Utiliser ref au lieu de reactive
 const form = ref({
@@ -183,15 +185,28 @@ const passwordError = ref('')
 
 // Validation du formulaire - Accéder aux valeurs avec .value
 const isFormValid = computed(() => {
-  return form.value.email.length > 0 && 
-         form.value.password.length > 0 && 
-         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)
+  const emailValid = form.value.email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)
+  const passwordValid = form.value.password.length > 0
+  
+  // Debug pour comprendre pourquoi le bouton est désactivé
+  console.log('Form validation:', {
+    email: form.value.email,
+    password: form.value.password,
+    emailValid,
+    passwordValid,
+    isLoginLoading: isLoginLoading.value,
+    isFormValid: emailValid && passwordValid,
+    buttonDisabled: isLoginLoading.value || !(emailValid && passwordValid)
+  })
+  
+  return emailValid && passwordValid
 })
 
 // Validation en temps réel
 watch(() => form.value.email, (newEmail) => {
   emailError.value = ''
-  if (newEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+  // Validation plus flexible - seulement si l'email n'est pas vide
+  if (newEmail && newEmail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
     emailError.value = 'Format d\'email invalide'
   }
 })
@@ -233,11 +248,15 @@ const handleLogin = async () => {
     })
 
     if (result.success) {
-      // Redirection selon le rôle
-      if (result.data.user.role === 'ADMIN') {
-        await navigateTo('/admin')
+      // ✅ Gestion de la redirection avec paramètre redirect
+      const route = useRoute()
+      const redirectTo = route.query.redirect
+      
+      if (redirectTo && redirectTo !== '/auth') {
+        await navigateTo(redirectTo, { replace: true })
       } else {
-        await navigateTo('/dashboard')
+        // ✅ Redirection par défaut vers /admin (votre dashboard principal)
+        await navigateTo('/admin', { replace: true })
       }
     } else {
       error.value = result.error || 'Erreur de connexion'

@@ -24,13 +24,34 @@
               Formulaires
             </NuxtLink>
             <Icon name="i-heroicons-chevron-right" class="breadcrumb-separator" />
-            <span class="breadcrumb-current">{{ formConfig?.title || 'Nouveau formulaire' }}</span>
+            <span class="breadcrumb-current">
+              {{ isEditingTitle ? editableTitle : (formConfig?.title || 'Nouveau formulaire') }}
+            </span>
           </div>
           
-          <h1 class="page-title">
-            <Icon name="i-heroicons-document-text" />
-            {{ formConfig?.title || 'Constructeur de formulaire' }}
-          </h1>
+          <div class="title-section">
+            <h1 class="page-title">
+              <Icon name="i-heroicons-document-text" />
+              <span 
+                v-if="!isEditingTitle" 
+                @dblclick="startEditTitle"
+                class="title-text"
+                :title="'Double-cliquez pour modifier le nom du formulaire'"
+              >
+                {{ formConfig?.title || 'Constructeur de formulaire' }}
+              </span>
+              <input 
+                v-else
+                ref="titleInput"
+                v-model="editableTitle"
+                @blur="saveTitle"
+                @keydown.enter="saveTitle"
+                @keydown.escape="cancelEditTitle"
+                class="title-input"
+                placeholder="Nom du formulaire"
+              />
+            </h1>
+          </div>
           
           <!-- Save status -->
           <div class="save-status">
@@ -158,16 +179,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
 import FormCanvas from './components/FormCanvas.vue'
 import FormPreview from './components/FormPreview.vue'
 import { useFormBuilder } from './composables/useFormBuilder'
 import type { FormConfig, FormStep } from '~/types/form'
 
 // Configuration de la page
-definePageMeta({
-  layout: 'default'
-})
+// definePageMeta({
+//   layout: 'default'
+// })
 
 const route = useRoute()
 const router = useRouter()
@@ -205,6 +226,11 @@ const showSuccess = ref(false)
 const showNewConfirm = ref(false)
 const isPreviewMode = ref(false)
 
+// États pour l'édition du titre
+const isEditingTitle = ref(false)
+const editableTitle = ref('')
+const titleInput = ref<HTMLInputElement>()
+
 // Fonction de sauvegarde définitive
 const saveForm = async () => {
   try {
@@ -241,6 +267,45 @@ const cancelNew = () => {
 const previewForm = () => {
   // Basculer en mode prévisualisation
   isPreviewMode.value = !isPreviewMode.value
+}
+
+// Fonctions pour l'édition du titre
+const startEditTitle = () => {
+  editableTitle.value = formConfig.value?.title || 'Nouveau formulaire'
+  isEditingTitle.value = true
+  nextTick(() => {
+    titleInput.value?.focus()
+    titleInput.value?.select()
+  })
+}
+
+const saveTitle = async () => {
+  if (!editableTitle.value.trim()) {
+    editableTitle.value = 'Nouveau formulaire'
+  }
+  
+  if (formConfig.value) {
+    // Mettre à jour le titre directement dans la configuration
+    formConfig.value.title = editableTitle.value.trim()
+    
+    // Sauvegarder automatiquement
+    try {
+      await saveToDatabase()
+      showSuccess.value = true
+      setTimeout(() => {
+        showSuccess.value = false
+      }, 3000)
+    } catch (error) {
+      console.error('Erreur sauvegarde titre:', error)
+    }
+  }
+  
+  isEditingTitle.value = false
+}
+
+const cancelEditTitle = () => {
+  editableTitle.value = formConfig.value?.title || 'Nouveau formulaire'
+  isEditingTitle.value = false
 }
 
 const formatRelativeTime = (date: Date) => {
@@ -560,18 +625,89 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .page-title {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   font-size: 1.75rem;
   font-weight: 600;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
+  flex: 1;
 }
 
 .page-title svg {
   width: 1.75rem;
   height: 1.75rem;
+}
+
+.title-text {
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.title-text:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.title-text:hover::before {
+  content: "✏️";
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.title-text:hover::after {
+  content: "Double-cliquez pour modifier";
+  position: absolute;
+  bottom: -1.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: normal;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  backdrop-filter: blur(5px);
+}
+
+.title-input {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: white;
+  outline: none;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+  min-width: 300px;
+}
+
+.title-input:focus {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.title-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Save status */

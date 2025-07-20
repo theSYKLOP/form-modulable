@@ -26,6 +26,7 @@
         :field="field"
         :value="formData[field.name]"
         :formValues="formData"
+        :allFields="allFields"
         @update:value="(value: any) => updateFieldValue(field.name, value)"
         :disabled="isValidating"
         :isBuilder="false"
@@ -92,6 +93,7 @@ import FieldRenderer from './FieldRenderer.vue'
 const props = defineProps<{
   step: FormStep
   formData: Record<string, any>
+  allFields: any[]
   canGoPrevious: boolean
   canGoNext: boolean
   isLastStep: boolean

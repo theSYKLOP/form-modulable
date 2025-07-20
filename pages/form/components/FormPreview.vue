@@ -40,6 +40,7 @@
             v-if="currentStep"
             :step="currentStep"
             :form-data="formData"
+            :all-fields="allFields"
             :can-go-previous="currentStepIndex > 0"
             :can-go-next="currentStepIndex < (formConfig?.steps?.length || 0) - 1 || canSubmit"
             :is-last-step="currentStepIndex === (formConfig?.steps?.length || 0) - 1"
@@ -213,9 +214,26 @@ const shouldShowForm = computed(() => {
   return hasFormConfig && hasSteps
 })
 
+// Computed pour récupérer tous les champs de tous les steps (nécessaire pour la logique conditionnelle)
+const allFields = computed(() => {
+  if (!props.formConfig?.steps) return []
+  
+  return props.formConfig.steps.reduce((acc, step) => {
+    return acc.concat(step.fields || [])
+  }, [] as any[])
+})
+
 // Methods (déjà déclarées après resetForm)
 const updateFieldValue = (fieldName: string, value: any) => {
   formData.value[fieldName] = value
+  
+  // Debug pour la logique conditionnelle
+  console.log('🔄 Field updated:', {
+    fieldName,
+    value,
+    allFormData: formData.value,
+    allFields: allFields.value
+  })
   
   // Effacer les messages globaux quand l'utilisateur modifie des données
   if (globalMessage.value) {

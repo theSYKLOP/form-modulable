@@ -185,19 +185,10 @@ interface Props {
   isBuilder?: boolean
   isPreview?: boolean
   formValues?: Record<string, any>
+  allFields?: FormFieldData[]
   showLabels?: boolean
   disabled?: boolean
-    conditionalLogic?: {
-      enabled: boolean
-      action: 'show' | 'hide'
-      logicalOperator: 'AND' | 'OR'
-      rules: Array<{
-        fieldId: string
-        operator: string
-        value: any
-      }>
-    }
-  }
+}
  
 
 const props = defineProps<Props>()
@@ -272,8 +263,12 @@ const isVisible = computed(() => {
   }
   
   const results = rules.map((rule) => {
-    // S'assurer que formValues existe
-    const fieldValue = props.formValues?.[rule.targetFieldId]
+    // Trouver le champ cible par son ID pour obtenir son name
+    const targetField = props.allFields?.find((f: FormFieldData) => f.id === rule.targetFieldId)
+    const targetFieldName = targetField?.name || rule.targetFieldId
+    
+    // Utiliser le name du champ pour accéder à la valeur dans formValues
+    const fieldValue = props.formValues?.[targetFieldName]
     
     switch (rule.operator) {
       case 'equals':
@@ -301,7 +296,9 @@ const isVisible = computed(() => {
     ? results.every(Boolean) 
     : results.some(Boolean)
   
-  return action === 'show' ? conditionMet : !conditionMet
+  const shouldShow = action === 'show' ? conditionMet : !conditionMet
+  
+  return shouldShow
 })
 </script>
 
