@@ -72,9 +72,15 @@
         
         <div class="header-actions">
           <!-- Bouton nouveau formulaire -->
-          <button @click="createNew" class="new-btn">
-            <Icon name="i-heroicons-document-plus" />
-            Nouveau
+          <button 
+            @click="createNew" 
+            class="new-btn"
+            :disabled="isCreatingNewForm || isSaving"
+            :class="{ 'loading': isCreatingNewForm }"
+          >
+            <Icon v-if="isCreatingNewForm" name="i-heroicons-arrow-path" class="animate-spin" />
+            <Icon v-else name="i-heroicons-document-plus" />
+            {{ isCreatingNewForm ? 'Création...' : 'Nouveau' }}
           </button>
           
           <!-- Indicateur de sauvegarde automatique -->
@@ -231,6 +237,9 @@ const isEditingTitle = ref(false)
 const editableTitle = ref('')
 const titleInput = ref<HTMLInputElement>()
 
+// États pour la protection
+const isCreatingNewForm = ref(false)
+
 // Fonction de sauvegarde définitive
 const saveForm = async () => {
   try {
@@ -260,17 +269,49 @@ const saveForm = async () => {
 
 // Fonction pour créer un nouveau formulaire
 const createNew = () => {
+  // ✅ Protection contre double-clic
+  if (isCreatingNewForm.value) {
+    console.log('⚠️ Création déjà en cours...')
+    return
+  }
+  
   showNewConfirm.value = true
 }
 
 const confirmNew = async () => {
+  // ✅ Protection supplémentaire
+  if (isCreatingNewForm.value) {
+    return
+  }
+
   try {
-    const newFormId = await createNewForm()
+    isCreatingNewForm.value = true
     showNewConfirm.value = false
-    // Rediriger vers le nouveau formulaire
-    await router.push(`/form?id=${newFormId}`)
+    
+    // ✅ Nettoyer l'ancien état si nécessaire
+    if (checkUnsavedChanges()) {
+      clearLocalStorage()
+    }
+    
+    // ✅ Utiliser la nouvelle fonction qui gère la session
+    const newFormId = await createNewForm()
+    console.log('✅ Nouveau formulaire créé:', newFormId)
+    
+    // ✅ Navigation avec l'ID unique
+    if (newFormId && newFormId !== 'new') {
+      await router.replace(`/form?id=${newFormId}`)
+    } else {
+      await router.replace('/form?id=new')
+    }
+    
   } catch (error) {
-    console.error('Erreur création formulaire:', error)
+    console.error('❌ Erreur création formulaire:', error)
+    alert('Erreur lors de la création du formulaire')
+  } finally {
+    // ✅ Libérer après un délai
+    setTimeout(() => {
+      isCreatingNewForm.value = false
+    }, 2000)
   }
 }
 
@@ -298,13 +339,24 @@ const saveTitle = async () => {
     editableTitle.value = 'Nouveau formulaire'
   }
   
-  if (formConfig.value) {
+  if (formConfig.value && !isSaving.value && formConfig.value.id) { // ✅ Vérifier qu'on a un ID valide
     // Mettre à jour le titre directement dans la configuration
     formConfig.value.title = editableTitle.value.trim()
     
+    console.log(`📝 Modification du titre: "${formConfig.value.title}" (ID: ${formConfig.value.id})`)
+    
+    // ✅ Vérification de sécurité avant sauvegarde
+    if (!formConfig.value.id || formConfig.value.id === 'new') {
+      console.error('❌ Tentative de sauvegarde sans ID valide')
+      isEditingTitle.value = false
+      return
+    }
+    
     // Sauvegarder automatiquement
     try {
-      await saveToDatabase()
+      const savedId = await saveToDatabase()
+      console.log(`✅ Titre sauvegardé avec succès (ID: ${savedId})`)
+      
       showSuccess.value = true
       setTimeout(() => {
         showSuccess.value = false
@@ -319,6 +371,8 @@ const saveTitle = async () => {
       }
       alert(errorMessage) // Temporaire - à remplacer par un toast
     }
+  } else {
+    console.warn('⚠️ Impossible de sauvegarder le titre: formConfig invalide ou sauvegarde en cours')
   }
   
   isEditingTitle.value = false
@@ -352,21 +406,57 @@ const loadFormSafely = async (formId?: string) => {
     error.value = null
     
     console.log('🔍 loadFormSafely called with formId:', formId)
+    console.log('🔍 Current URL:', window.location.href)
+    console.log('🔍 Route query:', route.query)
     
-    if (!formId || formId === 'new') {
+    // ✅ Validation stricte de l'ID
+    const actualFormId = formId || route.query.id as string
+    console.log('🔍 Actual formId to use:', actualFormId)
+    
+    // ✅ Améliorer la validation de l'ID
+    const isValidFormId = actualFormId && 
+                         actualFormId !== 'new' && 
+                         actualFormId !== 'undefined' && 
+                         actualFormId !== 'null' &&
+                         actualFormId.trim().length > 0
+    
+    if (!isValidFormId) {
       // Créer un nouveau formulaire ou initialiser depuis localStorage
       console.log('📝 Initializing new form...')
       const newFormId = await initializeFormBuilder()
       console.log('✅ Form initialized with ID:', newFormId)
       
-      if (newFormId && (!formId || formId === 'new')) {
+      // ✅ Toujours rediriger avec le nouvel ID
+      if (newFormId && newFormId !== actualFormId) {
+        console.log('🔄 Redirecting to new form ID:', newFormId)
         await router.replace(`/form?id=${newFormId}`)
       }
     } else {
       // Charger un formulaire existant
-      console.log('📥 Loading existing form:', formId)
-      await loadForm(formId)
-      console.log('✅ Form loaded successfully')
+      console.log('📥 Loading existing form:', actualFormId)
+      
+      try {
+        await loadForm(actualFormId)
+        console.log('✅ Form loaded successfully')
+        
+        // ✅ Vérifier que l'ID correspond bien
+        if (formConfig.value?.id && formConfig.value.id !== actualFormId) {
+          console.warn('⚠️ Loaded form ID does not match requested ID')
+          console.log('Expected:', actualFormId, 'Got:', formConfig.value.id)
+        }
+        
+      } catch (loadError: any) {
+        console.error('❌ Error loading existing form:', loadError)
+        
+        // Si le formulaire n'existe pas, créer un nouveau
+        if (loadError.statusCode === 404) {
+          console.log('📝 Form not found, creating new one...')
+          const newFormId = await initializeFormBuilder()
+          await router.replace(`/form?id=${newFormId}`)
+        } else {
+          throw loadError
+        }
+      }
     }
     
     // Vérifier que formConfig est bien défini
@@ -374,6 +464,9 @@ const loadFormSafely = async (formId?: string) => {
       console.warn('⚠️ formConfig is still null after initialization')
       throw new Error('Échec de l\'initialisation du formulaire')
     }
+    
+    console.log('✅ Final formConfig ID:', formConfig.value.id)
+    console.log('✅ Final formConfig title:', formConfig.value.title)
     
   } catch (err: any) {
     error.value = err.message || 'Erreur lors du chargement du formulaire'
@@ -812,9 +905,21 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.new-btn:hover {
-  background: rgba(217, 119, 6, 0.9);
-  transform: translateY(-1px);
+.new-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.new-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #9ca3af;
+}
+
+.new-btn:disabled:hover {
+  background: #9ca3af;
+  transform: none;
 }
 
 .save-btn {

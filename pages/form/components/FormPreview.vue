@@ -107,7 +107,65 @@
               </button>
             </div>
             <div class="modal-body">
-              <pre class="data-json">{{ JSON.stringify(formData, null, 2) }}</pre>
+              <!-- Données du formulaire -->
+              <div class="data-section">
+                <h4 class="section-title">Données du formulaire</h4>
+                <pre class="data-json">{{ JSON.stringify(formData, null, 2) }}</pre>
+              </div>
+              
+              <!-- ✅ Section extras avec les réponses de validation -->
+              <div v-if="validationResponses && validationResponses.length > 0" class="data-section extras-section">
+                <h4 class="section-title">
+                  <Icon name="heroicons:cog-6-tooth" class="section-icon" />
+                  Réponses de validation API ({{ validationResponses.length }})
+                </h4>
+                
+                <div class="validation-responses">
+                  <div 
+                    v-for="(response, index) in validationResponses" 
+                    :key="response.stepId"
+                    class="validation-response-item"
+                    :class="{ 'success': response.success, 'error': !response.success }"
+                  >
+                    <div class="response-header">
+                      <div class="response-info">
+                        <Icon 
+                          :name="response.success ? 'heroicons:check-circle' : 'heroicons:x-circle'"
+                          class="response-status-icon"
+                        />
+                        <span class="response-method">{{ response.method }}</span>
+                        <span class="response-endpoint">{{ response.endpoint }}</span>
+                      </div>
+                      <div class="response-timestamp">
+                        {{ new Date(response.timestamp).toLocaleString('fr-FR') }}
+                      </div>
+                    </div>
+                    
+                    <div class="response-content">
+                      <div class="response-section">
+                        <h5>Requête envoyée:</h5>
+                        <pre class="response-data request">{{ JSON.stringify(response.request, null, 2) }}</pre>
+                      </div>
+                      
+                      <div class="response-section">
+                        <h5>Réponse reçue:</h5>
+                        <pre class="response-data response">{{ JSON.stringify(response.response, null, 2) }}</pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Message si pas de réponses de validation -->
+              <div v-else class="data-section no-extras">
+                <h4 class="section-title">
+                  <Icon name="heroicons:information-circle" class="section-icon" />
+                  Réponses de validation API
+                </h4>
+                <p class="no-extras-text">
+                  Aucune validation API n'a été effectuée. Les réponses de validation apparaîtront ici lors de l'utilisation d'étapes avec validation API.
+                </p>
+              </div>
             </div>
             <div class="modal-footer">
               <button @click="copyFormData" class="copy-btn">
@@ -143,10 +201,15 @@
 import { ref, computed, watch } from 'vue'
 import type { FormConfig, FormStep, FormField } from '~/types/form'
 import FormStepPreview from './FormStepPreview.vue'
+// ✅ Importer le store partagé pour les réponses de validation
+import { useStepApiStore } from '../composables/useStepApiStore'
 
 const props = defineProps<{
   formConfig: FormConfig | null
 }>()
+
+// ✅ Utiliser le store partagé pour accéder aux réponses de validation
+const { validationResponses } = useStepApiStore()
 
 // États du formulaire
 const currentStepIndex = ref(0)
@@ -241,18 +304,32 @@ const goToPreviousStep = () => {
 }
 
 const goToNextStep = async () => {
-  if (!currentStep.value) return
+  console.log('🚀 goToNextStep appelé')
+  console.log('📊 État actuel:', {
+    currentStepIndex: currentStepIndex.value,
+    totalSteps: props.formConfig?.steps.length,
+    currentStep: currentStep.value?.title
+  })
+  
+  if (!currentStep.value) {
+    console.log('❌ Pas d\'étape actuelle')
+    return
+  }
   
   // Valider l'étape actuelle si elle a une API obligatoire
   if (currentStep.value.apiConfig?.validationRequired) {
+    console.log('⚠️ Validation API requise, délégation à FormStepPreview')
     // Cette validation sera gérée par FormStepPreview
     return
   }
   
   // Simplement naviguer vers l'étape suivante (ne pas soumettre)
   if (currentStepIndex.value < (props.formConfig?.steps.length || 0) - 1) {
+    console.log('➡️ Navigation vers l\'étape suivante')
     currentStepIndex.value++
     globalMessage.value = null
+  } else {
+    console.log('📍 Déjà à la dernière étape')
   }
   // Ne rien faire si on est à la dernière étape - laisser l'utilisateur cliquer sur "Soumettre"
 }
@@ -336,10 +413,23 @@ const previewFormData = () => {
 
 const copyFormData = async () => {
   try {
-    await navigator.clipboard.writeText(JSON.stringify(formData.value, null, 2))
+    // ✅ Inclure les réponses de validation dans les données copiées
+    const allData = {
+      formData: formData.value,
+      extras: {
+        validationResponses: validationResponses.value || [],
+        metadata: {
+          copiedAt: new Date().toISOString(),
+          formTitle: props.formConfig?.title || 'Formulaire sans titre',
+          stepsCount: props.formConfig?.steps.length || 0
+        }
+      }
+    }
+    
+    await navigator.clipboard.writeText(JSON.stringify(allData, null, 2))
     globalMessage.value = {
       type: 'success',
-      text: 'Données copiées dans le presse-papiers !'
+      text: 'Données complètes copiées dans le presse-papiers !'
     }
     showDataPreview.value = false
   } catch (error) {
@@ -589,8 +679,43 @@ const resetAndCloseSuccess = () => {
 
 .modal-body {
   padding: 1.5rem;
-  max-height: 400px;
+  max-height: 70vh;
   overflow-y: auto;
+}
+
+/* ✅ Sections de données dans le modal */
+.data-section {
+  margin-bottom: 1.5rem;
+}
+
+.data-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.section-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
+}
+
+.extras-section .section-title {
+  color: #3b82f6;
+}
+
+.extras-section .section-icon {
+  color: #3b82f6;
 }
 
 .data-json {
@@ -604,6 +729,149 @@ const resetAndCloseSuccess = () => {
   color: #1e293b;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* ✅ Styles pour les réponses de validation */
+.validation-responses {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.validation-response-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.validation-response-item.success {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.validation-response-item.error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.response-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.response-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.response-status-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.validation-response-item.success .response-status-icon {
+  color: #10b981;
+}
+
+.validation-response-item.error .response-status-icon {
+  color: #ef4444;
+}
+
+.response-method {
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  background: #374151;
+  color: white;
+}
+
+.response-endpoint {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.75rem;
+  color: #6b7280;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.response-timestamp {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.response-content {
+  padding: 1rem;
+}
+
+.response-section {
+  margin-bottom: 1rem;
+}
+
+.response-section:last-child {
+  margin-bottom: 0;
+}
+
+.response-section h5 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+}
+
+.response-data {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.response-data.request {
+  border-left: 3px solid #3b82f6;
+}
+
+.response-data.response {
+  border-left: 3px solid #10b981;
+}
+
+.validation-response-item.error .response-data.response {
+  border-left-color: #ef4444;
+}
+
+/* Section sans réponses de validation */
+.no-extras {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.no-extras .section-title {
+  justify-content: center;
+  border-bottom: none;
+  margin-bottom: 1rem;
+}
+
+.no-extras-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .modal-footer {

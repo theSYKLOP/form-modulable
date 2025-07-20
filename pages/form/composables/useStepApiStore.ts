@@ -8,21 +8,21 @@ interface StepApiResponse {
   error?: string
 }
 
-export function useStepApi() {
-  const isValidating = ref(false)
-  const validationError = ref<string | null>(null)
-  const validationSuccess = ref<string | null>(null)
-  // ✅ Nouveau: stocker les réponses de validation
-  const validationResponses = ref<Array<{
-    stepId: string
-    timestamp: string
-    endpoint: string
-    method: string
-    request: any
-    response: any
-    success: boolean
-  }>>([])
+// ✅ Instance globale partagée pour maintenir l'état entre les composants
+const isValidating = ref(false)
+const validationError = ref<string | null>(null)
+const validationSuccess = ref<string | null>(null)
+const validationResponses = ref<Array<{
+  stepId: string
+  timestamp: string
+  endpoint: string
+  method: string
+  request: any
+  response: any
+  success: boolean
+}>>([])
 
+export function useStepApiStore() {
   const validateStepWithApi = async (
     apiConfig: StepApiConfig, 
     formData: Record<string, any>,
@@ -36,7 +36,7 @@ export function useStepApi() {
     validationError.value = null
     validationSuccess.value = null
 
-    // ✅ Déclarer dataToSend au début pour être accessible dans le catch
+    // Déclarer dataToSend au début pour être accessible dans le catch
     let dataToSend: Record<string, any> = {}
 
     try {
@@ -76,7 +76,9 @@ export function useStepApi() {
         }
       })
 
-      // ✅ Stocker la réponse de validation pour la prévisualisation
+      console.log('✅ Réponse API reçue:', response)
+
+      // Stocker la réponse de validation pour la prévisualisation
       const validationEntry = {
         stepId: `step-${Date.now()}`, // Générer un ID unique pour cette validation
         timestamp: new Date().toISOString(),
@@ -87,8 +89,12 @@ export function useStepApi() {
         success: response.success
       }
       
+      console.log('✅ Stockage de l\'entrée de validation:', validationEntry)
+      
       // Ajouter au début du tableau (plus récent en premier)
       validationResponses.value.unshift(validationEntry)
+      
+      console.log('✅ Total des réponses stockées:', validationResponses.value.length)
       
       // Limiter à 10 dernières validations pour éviter une accumulation excessive
       if (validationResponses.value.length > 10) {
@@ -105,7 +111,7 @@ export function useStepApi() {
     } catch (error: any) {
       console.error('Erreur API étape:', error)
       
-      // ✅ Stocker également les erreurs de validation
+      // Stocker également les erreurs de validation
       const validationEntry = {
         stepId: `step-error-${Date.now()}`,
         timestamp: new Date().toISOString(),
@@ -151,7 +157,6 @@ export function useStepApi() {
     validationSuccess.value = null
   }
 
-  // ✅ Fonction pour effacer les réponses de validation
   const clearValidationResponses = () => {
     validationResponses.value = []
   }
@@ -160,9 +165,9 @@ export function useStepApi() {
     isValidating,
     validationError,
     validationSuccess,
-    validationResponses, // ✅ Exposer les réponses de validation
+    validationResponses, // État partagé global
     validateStepWithApi,
     clearValidationState,
-    clearValidationResponses // ✅ Exposer la fonction de nettoyage
+    clearValidationResponses
   }
 }

@@ -49,6 +49,7 @@
     <div class="step-actions">
       <button
         v-if="canGoPrevious"
+        type="button"
         @click="$emit('previous')"
         class="step-btn previous"
         :disabled="isValidating"
@@ -59,6 +60,7 @@
 
       <button
         v-if="step.apiConfig?.enabled"
+        type="button"
         @click="validateWithApi"
         class="step-btn validate"
         :disabled="isValidating || !hasRequiredFields"
@@ -74,6 +76,7 @@
 
       <button
         v-if="canGoNext && !isLastStep"
+        type="button"
         @click="handleNext"
         class="step-btn next"
         :disabled="isValidating || (step.apiConfig?.validationRequired && !validationSuccess)"
@@ -87,7 +90,7 @@
 
 <script setup lang="ts">
 import type { FormStep, FormField } from '~/types/form'
-import { useStepApi } from '../composables/useStepApi'
+import { useStepApiStore } from '../composables/useStepApiStore'
 import FieldRenderer from './FieldRenderer.vue'
 
 const props = defineProps<{
@@ -107,7 +110,7 @@ const emit = defineEmits<{
 }>()
 
 // Composables
-const { isValidating, validationError, validationSuccess, validateStepWithApi, clearValidationState } = useStepApi()
+const { isValidating, validationError, validationSuccess, validateStepWithApi, clearValidationState } = useStepApiStore()
 
 // Computed
 const sortedFields = computed(() => {
@@ -152,12 +155,22 @@ const validateWithApi = async () => {
 }
 
 const handleNext = () => {
+  console.log('🔄 handleNext appelé')
+  console.log('📋 Step config:', {
+    hasApiConfig: !!props.step.apiConfig,
+    enabled: props.step.apiConfig?.enabled,
+    validationRequired: props.step.apiConfig?.validationRequired,
+    validationSuccess: validationSuccess.value
+  })
+  
   // Si une validation API est requise et qu'elle n'a pas été effectuée avec succès
   if (props.step.apiConfig?.validationRequired && !validationSuccess.value) {
+    console.log('⚠️ Validation API requise mais pas encore réussie, lancement de la validation')
     validateWithApi()
     return
   }
   
+  console.log('✅ Émission de l\'événement next')
   emit('next')
 }
 

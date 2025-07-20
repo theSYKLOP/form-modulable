@@ -246,6 +246,77 @@
       </div>
     </div>
 
+    <!-- ✅ Modal de prévisualisation du formulaire -->
+    <div v-if="showPreviewModal" class="modal-overlay preview-overlay" @click="closePreviewModal">
+      <div class="preview-modal" @click.stop>
+        <!-- Header de la modal -->
+        <div class="preview-modal-header">
+          <div class="preview-header-info">
+            <div class="preview-form-title">
+              <Icon name="i-heroicons-eye" class="preview-icon" />
+              <span>Aperçu du formulaire</span>
+            </div>
+            <p v-if="previewingForm" class="preview-form-name">{{ previewingForm.title }}</p>
+          </div>
+          
+          <button @click="closePreviewModal" class="preview-close-btn">
+            <Icon name="i-heroicons-x-mark" />
+          </button>
+        </div>
+
+        <!-- Contenu de la modal -->
+        <div class="preview-modal-body">
+          <!-- État de chargement -->
+          <div v-if="loadingPreview" class="preview-loading">
+            <div class="loading-spinner">
+              <Icon name="i-heroicons-arrow-path" class="animate-spin" />
+            </div>
+            <p>Chargement du formulaire...</p>
+          </div>
+
+          <!-- Composant FormPreview -->
+          <div v-else-if="previewFormConfig" class="preview-content-wrapper">
+            <FormPreview :form-config="previewFormConfig" />
+          </div>
+
+          <!-- État d'erreur -->
+          <div v-else class="preview-error">
+            <div class="error-icon">
+              <Icon name="i-heroicons-exclamation-circle" />
+            </div>
+            <p>Impossible de charger le formulaire</p>
+            <button @click="closePreviewModal" class="btn-secondary">
+              Fermer
+            </button>
+          </div>
+        </div>
+
+        <!-- Footer de la modal -->
+        <div class="preview-modal-footer" v-if="!loadingPreview && previewFormConfig">
+          <div class="preview-stats">
+            <div class="stat">
+              <Icon name="i-heroicons-rectangle-stack" />
+              <span>{{ previewingForm?.stepsCount }} étape(s)</span>
+            </div>
+            <div class="stat">
+              <Icon name="i-heroicons-squares-2x2" />
+              <span>{{ previewingForm?.fieldsCount }} champ(s)</span>
+            </div>
+          </div>
+          
+          <div class="preview-actions">
+            <button @click="editForm(previewingForm!)" class="btn-secondary">
+              <Icon name="i-heroicons-pencil-square" />
+              Modifier
+            </button>
+            <button @click="closePreviewModal" class="btn-outline">
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Notifications -->
     <div v-if="notification" class="notification" :class="notification.type">
       <Icon :name="getNotificationIcon(notification.type)" />
@@ -260,6 +331,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { navigateTo } from '#app'
+// ✅ Import du composant FormPreview
+import FormPreview from '~/pages/form/components/FormPreview.vue'
+
 
 // Types (gardés identiques)
 interface FormSummary {
@@ -312,9 +386,7 @@ const generateId = (prefix: string = '') => {
 }
 
 // Page meta
-definePageMeta({
-  layout: 'admin'
-})
+
 
 useHead({
   title: 'Gestion des formulaires - Admin'
@@ -336,6 +408,12 @@ const deletingForms = ref(new Set<string>())
 const duplicatingForms = ref(new Set<string>())
 const formToDelete = ref<FormSummary | null>(null)
 const notification = ref<Notification | null>(null)
+
+// ✅ État pour la modal de prévisualisation
+const showPreviewModal = ref(false)
+const previewingForm = ref<FormSummary | null>(null)
+const previewFormConfig = ref<any>(null)
+const loadingPreview = ref(false)
 
 // Debounced search
 let searchTimeout: NodeJS.Timeout
@@ -405,7 +483,33 @@ const editForm = async (form: FormSummary) => {
 }
 
 const previewForm = async (form: FormSummary) => {
-  window.open(`/form/preview/${form.id}`, '_blank')
+  try {
+    previewingForm.value = form
+    showPreviewModal.value = true
+    loadingPreview.value = true
+    
+    // Charger la configuration complète du formulaire
+    const response = await $fetch<ApiResponse<FormResponse>>(`/api/form/${form.id}`)
+    
+    if (response?.success && response.data) {
+      previewFormConfig.value = response.data
+    } else {
+      throw new Error(response?.message || 'Erreur lors du chargement')
+    }
+  } catch (error: any) {
+    console.error('Erreur chargement formulaire pour preview:', error)
+    showNotification('error', 'Erreur lors du chargement du formulaire')
+    showPreviewModal.value = false
+  } finally {
+    loadingPreview.value = false
+  }
+}
+
+const closePreviewModal = () => {
+  showPreviewModal.value = false
+  previewingForm.value = null
+  previewFormConfig.value = null
+  loadingPreview.value = false
 }
 
 const duplicateForm = async (form: FormSummary) => {
@@ -973,7 +1077,170 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
-/* Modal */
+/* Modal de prévisualisation */
+.preview-overlay {
+  z-index: 1100;
+}
+
+.preview-modal {
+  background: white;
+  border-radius: 1rem;
+  width: 95vw;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.preview-header-info {
+  flex: 1;
+}
+
+.preview-form-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.preview-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #3b82f6;
+}
+
+.preview-form-title span {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.preview-form-name {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.875rem;
+  padding-left: 2.25rem;
+}
+
+.preview-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.preview-close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.preview-close-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.preview-modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  flex: 1;
+}
+
+.preview-loading .loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 1rem;
+  color: #3b82f6;
+}
+
+.preview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  flex: 1;
+}
+
+.preview-error .error-icon {
+  width: 3rem;
+  height: 3rem;
+  color: #ef4444;
+  margin-bottom: 1rem;
+}
+
+.preview-content-wrapper {
+  flex: 1;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.preview-content-wrapper :deep(.form-preview) {
+  height: 100%;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.preview-content-wrapper :deep(.preview-container) {
+  background: transparent;
+}
+
+.preview-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.preview-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.preview-stats .stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.preview-stats .stat svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 0.75rem;
+}
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1151,6 +1418,41 @@ onMounted(() => {
 
   .modal-overlay {
     padding: 0.5rem;
+  }
+
+  /* Modal de prévisualisation responsive */
+  .preview-modal {
+    width: 100vw;
+    max-width: none;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .preview-modal-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .preview-form-title span {
+    font-size: 1rem;
+  }
+
+  .preview-modal-footer {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .preview-stats {
+    justify-content: center;
+  }
+
+  .preview-actions {
+    justify-content: stretch;
+  }
+
+  .preview-actions button {
+    flex: 1;
   }
 }
 
