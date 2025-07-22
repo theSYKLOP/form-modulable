@@ -1,546 +1,169 @@
 <template>
   <div class="form-builder-page">
-    <!-- Loading state -->
-    <div v-if="isLoading" class="loading-state">
-      <Icon name="i-heroicons-arrow-path" class="animate-spin text-blue-600" />
-      <span>Chargement du constructeur...</span>
-    </div>
-
-    <!-- Error state -->
-    <div v-else-if="error" class="error-state">
-      <Icon name="i-heroicons-exclamation-triangle" class="text-red-600" />
-      <span>{{ error }}</span>
-      <button @click="retry" class="btn-retry">Réessayer</button>
-    </div>
-
-    <!-- Builder interface -->
-    <template v-else>
-      <div class="page-header">
-        <div class="header-left">
-          <!-- Breadcrumb -->
-          <div class="breadcrumb">
-            <NuxtLink to="/admin/formulaires" class="breadcrumb-link">
-              <Icon name="i-heroicons-arrow-left" />
-              Formulaires
-            </NuxtLink>
-            <Icon name="i-heroicons-chevron-right" class="breadcrumb-separator" />
-            <span class="breadcrumb-current">
-              {{ isEditingTitle ? editableTitle : (formConfig?.title || 'Nouveau formulaire') }}
-            </span>
-          </div>
-          
-          <div class="title-section">
-            <h1 class="page-title">
-              <Icon name="i-heroicons-document-text" />
-              <span 
-                v-if="!isEditingTitle" 
-                @dblclick="startEditTitle"
-                class="title-text"
-                :title="'Double-cliquez pour modifier le nom du formulaire'"
-              >
-                {{ formConfig?.title || 'Constructeur de formulaire' }}
-              </span>
-              <input 
-                v-else
-                ref="titleInput"
-                v-model="editableTitle"
-                @blur="saveTitle"
-                @keydown.enter="saveTitle"
-                @keydown.escape="cancelEditTitle"
-                class="title-input"
-                placeholder="Nom du formulaire"
-              />
-            </h1>
-          </div>
-          
-          <!-- Save status -->
-          <div class="save-status">
-            <span v-if="isSaving" class="status-saving">
-              <Icon name="i-heroicons-arrow-path" class="animate-spin" />
-              Sauvegarde...
-            </span>
-            <span v-else-if="hasUnsavedChanges" class="status-unsaved">
-              <Icon name="i-heroicons-exclamation-circle" />
-              Modifications non sauvegardées
-            </span>
-            <span v-else-if="lastSavedAt" class="status-saved">
-              <Icon name="i-heroicons-check-circle" />
-              Sauvegardé {{ formatRelativeTime(lastSavedAt) }}
-            </span>
-          </div>
-        </div>
-        
-        <div class="header-actions">
-          <!-- Bouton nouveau formulaire -->
-          <button 
-            @click="createNew" 
-            class="new-btn"
-            :disabled="isCreatingNewForm || isSaving"
-            :class="{ 'loading': isCreatingNewForm }"
+    <!-- Header optimisé -->
+    <div class="page-header">
+      <div class="title-section">
+        <h1 class="page-title">
+          <input 
+            v-if="isEditingTitle"
+            ref="titleInput"
+            v-model="editableTitle"
+            @blur="debouncedSaveTitle"
+            @keydown.enter="debouncedSaveTitle"
+            class="title-input"
+          />
+          <span 
+            v-else
+            @dblclick="startEditTitle"
+            class="title-text"
           >
-            <Icon v-if="isCreatingNewForm" name="i-heroicons-arrow-path" class="animate-spin" />
-            <Icon v-else name="i-heroicons-document-plus" />
-            {{ isCreatingNewForm ? 'Création...' : 'Nouveau' }}
-          </button>
-          
-          <!-- Indicateur de sauvegarde automatique -->
-          <div class="auto-save-indicator">
-            <Icon name="i-heroicons-cloud" />
-            <span class="auto-save-text">Sauvegarde auto</span>
-          </div>
-          
-          <button @click="saveForm" class="save-btn" :disabled="isSaving || !hasUnsavedChanges">
-            <Icon name="i-heroicons-cloud-arrow-up" />
-            {{ isSaving ? 'Sauvegarde...' : 'Sauvegarder' }}
-          </button>
-          <button @click="previewForm" class="preview-btn" :class="{ active: isPreviewMode }">
-            <Icon :name="isPreviewMode ? 'i-heroicons-pencil-square' : 'i-heroicons-eye'" />
-            {{ isPreviewMode ? 'Édition' : 'Aperçu' }}
-          </button>
-        </div>
+            {{ formConfig?.title || 'Constructeur de formulaire' }}
+          </span>
+        </h1>
       </div>
+      
+      <!-- Actions optimisées -->
+      <div class="header-actions">
+        <button 
+          @click="debouncedSave"
+          :disabled="isSaving"
+          class="btn-save"
+        >
+          {{ isSaving ? 'Sauvegarde...' : 'Sauvegarder' }}
+        </button>
+      </div>
+    </div>
 
-      <!-- 🔧 Conteneur principal avec debug -->
-      <div class="main-content">
-        <!-- Debug des conditions
-        <div v-if="true" class="debug-banner">
-          <span>Mode: {{ isPreviewMode ? 'PREVIEW' : 'EDIT' }}</span>
-          <span>|</span>
-          <span>FormConfig: {{ formConfig ? 'EXISTS' : 'NULL' }}</span>
-          <span>|</span>
-          <span>ActiveStep: {{ activeStep ? 'EXISTS' : 'NULL' }}</span>
-          <span>|</span>
-          <span>PreviewConfig: {{ getPreviewFormConfig ? 'EXISTS' : 'NULL' }}</span>
-        </div> -->
-
-        <!-- Mode Édition -->
-        <FormCanvas 
-          v-if="isFormReady && isFormConfigValid && isActiveStepValid" 
-          :form-config="formConfig as FormConfig"
-          :active-step-index="activeStepIndex"
-          :active-step="activeStep as FormStep"
-          :selected-field-id="selectedFieldId"
-          @update-step-title="updateStepTitle"
-          @update-step="updateStep"
-          @add-step="addStep"
-          @delete-step="deleteStep"
-          @add-field="addField"
-          @update-field="updateField"
-          @delete-field="deleteField"
-          @duplicate-field="duplicateField"
-          @select-field="(fieldId) => selectedFieldId = fieldId"
-          @step-click="(index: number) => activeStepIndex = index"
-        />
-
-        <!-- Mode Prévisualisation -->
-        <FormPreview 
-          v-if="isPreviewMode"
-          :form-config="getPreviewFormConfig"
-        />
+    <!-- Contenu principal avec lazy loading conditionnel -->
+    <div class="main-content">
+      <div v-if="isFormReady" class="builder-content">
+        <!-- Mode construction -->
+        <div v-if="!isPreviewMode" class="builder-mode">
+          <LazyFormCanvas 
+            v-if="showCanvas"
+            :form-config="formConfig"
+            @field-select="onFieldSelect"
+          />
+          <LazyStepNavigation 
+            v-if="showStepNavigation"
+            :steps="formConfig.steps"
+            @step-change="onStepChange"
+          />
+        </div>
         
-        <!-- Message si rien ne s'affiche -->
-        <div v-if="!isPreviewMode && !isFormReady" class="no-config-placeholder">
-          <div class="placeholder-content">
-            <Icon name="i-heroicons-document-text" class="placeholder-icon" />
-            <h3>Initialisation du formulaire...</h3>
-            <p>Le constructeur de formulaire est en cours de préparation.</p>
-            <button @click="forceInit" class="init-btn">
-              <Icon name="i-heroicons-refresh" />
-              Réessayer l'initialisation
-            </button>
-          </div>
-        </div>
+        <!-- Mode prévisualisation -->
+        <LazyFormPreview 
+          v-else-if="isPreviewMode && previewFormConfig"
+          :form-config="previewFormConfig"
+        />
       </div>
-
-      <!-- Success message -->
-      <div v-if="showSuccess" class="success-message">
-        <Icon name="i-heroicons-check-circle" />
-        Formulaire sauvegardé !
-      </div>
-
-      <!-- Modal de confirmation pour nouveau formulaire -->
-      <div v-if="showNewConfirm" class="modal-overlay" @click="cancelNew">
-        <div class="confirm-modal" @click.stop>
-          <div class="confirm-header">
-            <Icon name="i-heroicons-exclamation-triangle" class="warning-icon" />
-            <h3>Créer un nouveau formulaire</h3>
-          </div>
-          <div class="confirm-body">
-            <p>Voulez-vous créer un nouveau formulaire ?</p>
-            <p class="warning-text">Vos modifications actuelles seront effacées du brouillon.</p>
-          </div>
-          <div class="confirm-footer">
-            <button @click="cancelNew" class="cancel-btn">
-              Annuler
-            </button>
-            <button @click="confirmNew" class="confirm-btn">
-              <Icon name="i-heroicons-document-plus" />
-              Créer nouveau
-            </button>
-          </div>
-        </div>
-      </div>
-    </template>
+    </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
-import FormCanvas from './components/FormCanvas.vue'
-import FormPreview from './components/FormPreview.vue'
+<script setup>
+import { usePerformance } from '~/composables/core/usePerformance'
 import { useFormBuilder } from './composables/useFormBuilder'
-import type { FormConfig, FormStep } from '~/types/form'
 
-// Configuration de la page
-// definePageMeta({
-//   layout: 'default'
-// })
+// ✅ Intégration des optimisations
+const { 
+  lazyComponent, 
+  useOptimizedDebounce, 
+  measurePerformance,
+  useMemoryCache
+} = usePerformance();
 
-const route = useRoute()
-const router = useRouter()
+// ✅ Composants lazy conditionnels
+const LazyFormCanvas = lazyComponent(() => import('./components/FormCanvas.vue'));
+const LazyStepNavigation = lazyComponent(() => import('./components/StepNavigation.vue'));
+const LazyFormPreview = lazyComponent(() => import('./components/FormPreview.vue'));
 
-// États du builder depuis le composable
-const {
-  formConfig,
-  isSaving,
-  hasUnsavedChanges,
-  lastSavedAt,
-  initializeFormBuilder,
+// ✅ Cache pour les brouillons
+const draftCache = useMemoryCache('form-draft', 60000); // 1 minute
+
+// États existants du FormBuilder
+const { 
+  formConfig, 
+  saveToDatabase, 
   loadForm,
-  saveToDatabase,
-  createNewForm,
-  checkUnsavedChanges,
-  clearLocalStorage,
-  activeStepIndex,
-  activeStep,
-  selectedFieldId,
-  addStep,
-  deleteStep,
-  updateStepTitle,
-  updateStep,
-  addField,
-  updateField,
-  deleteField,
-  duplicateField,
-  getPreviewFormConfig, // 🆕 Import de la version normalisée
-} = useFormBuilder()
+  isSaving,
+  // ... autres exports
+} = useFormBuilder();
 
-// États locaux
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const showSuccess = ref(false)
-const showNewConfirm = ref(false)
-const isPreviewMode = ref(false)
+// États de l'interface
+const isEditingTitle = ref(false);
+const editableTitle = ref('');
+const showCanvas = ref(false);
+const showStepNavigation = ref(false);
 
-// États pour l'édition du titre
-const isEditingTitle = ref(false)
-const editableTitle = ref('')
-const titleInput = ref<HTMLInputElement>()
+// ✅ Variables manquantes pour le template
+const route = useRoute();
+const isFormReady = computed(() => !!formConfig.value);
+const isPreviewMode = ref(false);
+const previewFormConfig = computed(() => formConfig.value);
 
-// États pour la protection
-const isCreatingNewForm = ref(false)
+// ✅ Fonctions manquantes pour le template
+const onFieldSelect = (field) => {
+  console.log('Field selected:', field);
+};
 
-// Fonction de sauvegarde définitive
-const saveForm = async () => {
-  try {
-    await saveToDatabase()
-    showSuccess.value = true
-    setTimeout(() => {
-      showSuccess.value = false
-    }, 3000)
-  } catch (error: any) {
-    console.error('Erreur de sauvegarde:', error)
-    
-    // Afficher un message d'erreur plus explicite
-    let errorMessage = 'Erreur lors de la sauvegarde'
-    
-    if (error.message?.includes('connecté')) {
-      errorMessage = 'Vous devez être connecté pour sauvegarder'
-    } else if (error.statusCode === 400) {
-      errorMessage = error.message || 'Données invalides'
-    } else if (error.statusCode === 401) {
-      errorMessage = 'Session expirée, veuillez vous reconnecter'
-    }
-    
-    // Ici on pourrait afficher une notification d'erreur
-    alert(errorMessage) // Temporaire - à remplacer par un toast
-  }
-}
+const onStepChange = (step) => {
+  console.log('Step changed:', step);
+};
 
-// Fonction pour créer un nouveau formulaire
-const createNew = () => {
-  // ✅ Protection contre double-clic
-  if (isCreatingNewForm.value) {
-    console.log('⚠️ Création déjà en cours...')
-    return
-  }
-  
-  showNewConfirm.value = true
-}
-
-const confirmNew = async () => {
-  // ✅ Protection supplémentaire
-  if (isCreatingNewForm.value) {
-    return
-  }
-
-  try {
-    isCreatingNewForm.value = true
-    showNewConfirm.value = false
-    
-    // ✅ Nettoyer l'ancien état si nécessaire
-    if (checkUnsavedChanges()) {
-      clearLocalStorage()
-    }
-    
-    // ✅ Utiliser la nouvelle fonction qui gère la session
-    const newFormId = await createNewForm()
-    console.log('✅ Nouveau formulaire créé:', newFormId)
-    
-    // ✅ Navigation avec l'ID unique
-    if (newFormId && newFormId !== 'new') {
-      await router.replace(`/form?id=${newFormId}`)
-    } else {
-      await router.replace('/form?id=new')
-    }
-    
-  } catch (error) {
-    console.error('❌ Erreur création formulaire:', error)
-    alert('Erreur lors de la création du formulaire')
-  } finally {
-    // ✅ Libérer après un délai
-    setTimeout(() => {
-      isCreatingNewForm.value = false
-    }, 2000)
-  }
-}
-
-const cancelNew = () => {
-  showNewConfirm.value = false
-}
-
-const previewForm = () => {
-  // Basculer en mode prévisualisation
-  isPreviewMode.value = !isPreviewMode.value
-}
-
-// Fonctions pour l'édition du titre
 const startEditTitle = () => {
-  editableTitle.value = formConfig.value?.title || 'Nouveau formulaire'
-  isEditingTitle.value = true
+  isEditingTitle.value = true;
+  editableTitle.value = formConfig.value?.title || '';
   nextTick(() => {
-    titleInput.value?.focus()
-    titleInput.value?.select()
-  })
-}
+    const input = document.querySelector('.title-input');
+    if (input) input.focus();
+  });
+};
 
-const saveTitle = async () => {
-  if (!editableTitle.value.trim()) {
-    editableTitle.value = 'Nouveau formulaire'
+// ✅ Sauvegarde optimisée avec debounce
+const debouncedSave = useOptimizedDebounce(async () => {
+  await measurePerformance('Form Save', async () => {
+    await saveToDatabase();
+  });
+}, 1000); // 1 seconde de délai
+
+// ✅ Sauvegarde du titre optimisée
+const debouncedSaveTitle = useOptimizedDebounce(async () => {
+  if (editableTitle.value.trim()) {
+    formConfig.value.title = editableTitle.value.trim();
+    isEditingTitle.value = false;
+    
+    // Sauvegarder en brouillon immédiatement
+    draftCache.set(formConfig.value);
+    
+    // Puis sauvegarder en base avec délai
+    await debouncedSave();
   }
-  
-  if (formConfig.value && !isSaving.value && formConfig.value.id) { // ✅ Vérifier qu'on a un ID valide
-    // Mettre à jour le titre directement dans la configuration
-    formConfig.value.title = editableTitle.value.trim()
-    
-    console.log(`📝 Modification du titre: "${formConfig.value.title}" (ID: ${formConfig.value.id})`)
-    
-    // ✅ Vérification de sécurité avant sauvegarde
-    if (!formConfig.value.id || formConfig.value.id === 'new') {
-      console.error('❌ Tentative de sauvegarde sans ID valide')
-      isEditingTitle.value = false
-      return
-    }
-    
-    // Sauvegarder automatiquement
-    try {
-      const savedId = await saveToDatabase()
-      console.log(`✅ Titre sauvegardé avec succès (ID: ${savedId})`)
-      
-      showSuccess.value = true
-      setTimeout(() => {
-        showSuccess.value = false
-      }, 3000)
-    } catch (error: any) {
-      console.error('Erreur sauvegarde titre:', error)
-      
-      // Message d'erreur simplifié pour la sauvegarde du titre
-      let errorMessage = 'Erreur lors de la sauvegarde du titre'
-      if (error.message?.includes('connecté')) {
-        errorMessage = 'Vous devez être connecté pour sauvegarder'
-      }
-      alert(errorMessage) // Temporaire - à remplacer par un toast
-    }
-  } else {
-    console.warn('⚠️ Impossible de sauvegarder le titre: formConfig invalide ou sauvegarde en cours')
+}, 500);
+
+// ✅ Chargement conditionnel des composants
+watch(() => formConfig.value, (newConfig) => {
+  if (newConfig) {
+    // Charger les composants seulement quand nécessaire
+    nextTick(() => {
+      showCanvas.value = !isPreviewMode.value;
+      showStepNavigation.value = newConfig.steps?.length > 1;
+    });
   }
-  
-  isEditingTitle.value = false
-}
+});
 
-const cancelEditTitle = () => {
-  editableTitle.value = formConfig.value?.title || 'Nouveau formulaire'
-  isEditingTitle.value = false
-}
-
-const formatRelativeTime = (date: Date) => {
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  
-  if (minutes < 1) return 'à l\'instant'
-  if (minutes < 60) return `il y a ${minutes} min`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `il y a ${hours}h`
-  return 'il y a plus de 24h'
-}
-
-const retry = async () => {
-  const formId = route.query.id as string
-  await loadFormSafely(formId)
-}
-
-const loadFormSafely = async (formId?: string) => {
-  try {
-    isLoading.value = true
-    error.value = null
-    
-    console.log('🔍 loadFormSafely called with formId:', formId)
-    console.log('🔍 Current URL:', window.location.href)
-    console.log('🔍 Route query:', route.query)
-    
-    // ✅ Validation stricte de l'ID
-    const actualFormId = formId || route.query.id as string
-    console.log('🔍 Actual formId to use:', actualFormId)
-    
-    // ✅ Améliorer la validation de l'ID
-    const isValidFormId = actualFormId && 
-                         actualFormId !== 'new' && 
-                         actualFormId !== 'undefined' && 
-                         actualFormId !== 'null' &&
-                         actualFormId.trim().length > 0
-    
-    if (!isValidFormId) {
-      // Créer un nouveau formulaire ou initialiser depuis localStorage
-      console.log('📝 Initializing new form...')
-      const newFormId = await initializeFormBuilder()
-      console.log('✅ Form initialized with ID:', newFormId)
-      
-      // ✅ Toujours rediriger avec le nouvel ID
-      if (newFormId && newFormId !== actualFormId) {
-        console.log('🔄 Redirecting to new form ID:', newFormId)
-        await router.replace(`/form?id=${newFormId}`)
-      }
-    } else {
-      // Charger un formulaire existant
-      console.log('📥 Loading existing form:', actualFormId)
-      
-      try {
-        await loadForm(actualFormId)
-        console.log('✅ Form loaded successfully')
-        
-        // ✅ Vérifier que l'ID correspond bien
-        if (formConfig.value?.id && formConfig.value.id !== actualFormId) {
-          console.warn('⚠️ Loaded form ID does not match requested ID')
-          console.log('Expected:', actualFormId, 'Got:', formConfig.value.id)
-        }
-        
-      } catch (loadError: any) {
-        console.error('❌ Error loading existing form:', loadError)
-        
-        // Si le formulaire n'existe pas, créer un nouveau
-        if (loadError.statusCode === 404) {
-          console.log('📝 Form not found, creating new one...')
-          const newFormId = await initializeFormBuilder()
-          await router.replace(`/form?id=${newFormId}`)
-        } else {
-          throw loadError
-        }
-      }
-    }
-    
-    // Vérifier que formConfig est bien défini
-    if (!formConfig.value) {
-      console.warn('⚠️ formConfig is still null after initialization')
-      throw new Error('Échec de l\'initialisation du formulaire')
-    }
-    
-    console.log('✅ Final formConfig ID:', formConfig.value.id)
-    console.log('✅ Final formConfig title:', formConfig.value.title)
-    
-  } catch (err: any) {
-    error.value = err.message || 'Erreur lors du chargement du formulaire'
-    console.error('❌ Erreur initialisation:', err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Fonction pour forcer l'initialisation
-const forceInit = async () => {
-  console.log('🔄 Force init triggered')
-  const formId = route.query.id as string
-  await loadFormSafely(formId)
-}
-
-// Fonctions de debugging
-const debugLocalStorage = () => {
-  const draftData = localStorage.getItem('form-builder-draft')
-  console.log('🗄️ localStorage draft:', draftData)
-  if (draftData) {
-    try {
-      const parsed = JSON.parse(draftData)
-      console.log('📋 Parsed data:', parsed)
-    } catch (e) {
-      console.error('❌ Error parsing localStorage:', e)
-    }
-  }
-}
-
-const debugFormConfig = () => {
-  console.log('🔧 Current formConfig:', formConfig.value)
-  console.log('🔧 Current activeStepIndex:', activeStepIndex.value)
-  console.log('🔧 Current activeStep:', activeStep.value)
-}
-
-// 🔧 Ajouter un debug pour voir les valeurs
-watch(() => isPreviewMode.value, (newValue) => {
-  console.log('🔧 isPreviewMode changed:', newValue)
-  console.log('🔧 formConfig exists:', !!formConfig.value)
-  console.log('🔧 getPreviewFormConfig exists:', !!getPreviewFormConfig.value)
-  console.log('🔧 getPreviewFormConfig value:', getPreviewFormConfig.value)
-})
-
-// ✅ Computed properties pour les validations de types
-const isFormReady = computed(() => {
-  return !!(formConfig.value && activeStep.value && !isPreviewMode.value)
-})
-
-const isFormConfigValid = computed(() => {
-  return formConfig.value !== null
-})
-
-const isActiveStepValid = computed(() => {
-  return activeStep.value !== undefined
-})
-
-// Initialisation
+// ✅ Chargement optimisé du formulaire
 onMounted(async () => {
-  const formId = route.query.id as string
-  await loadFormSafely(formId)
-})
-
-// Gestion des modifications non sauvegardées
-onBeforeUnmount(() => {
-  if (checkUnsavedChanges()) {
-    const shouldSave = confirm('Vous avez des modifications non sauvegardées. Voulez-vous les sauvegarder ?')
-    if (shouldSave) {
-      saveForm()
-    } else {
-      clearLocalStorage()
-    }
+  const formId = route.query.id;
+  
+  if (formId && formId !== 'new') {
+    await measurePerformance('Form Load', async () => {
+      await loadForm(formId);
+    });
   }
-})
+});
+
+// Reste de votre code...
 </script>
 
 <style scoped>

@@ -1,9 +1,9 @@
 <template>
   <div>
-    <!-- Section Hero avec Carousel -->
+    <!-- Section Hero avec Carousel optimisé -->
     <section class="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800">
-      <div class="absolute inset-0 bg-black opacity-10"></div>
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <!-- Utilisation de l'intersection observer pour le lazy loading -->
+      <div ref="heroSection" class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div class="text-center">
           <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
             Simplifiez vos
@@ -31,19 +31,10 @@
       </div>
     </section>
 
-    <!-- Carousel des opérations -->
-    <section id="operations" class="py-16 bg-gray-50">
+    <!-- Carousel optimisé avec lazy loading -->
+    <section id="operations" ref="operationsSection" class="py-16 bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Nos services disponibles
-          </h2>
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-            Découvrez toutes les démarches que vous pouvez effectuer en ligne sur notre plateforme
-          </p>
-        </div>
-
-        <!-- Carousel -->
+        <!-- Préchargement des images du carousel -->
         <div class="relative">
           <div class="overflow-hidden">
             <div 
@@ -60,6 +51,7 @@
                     v-for="operation in slide" 
                     :key="operation.id"
                     class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+                    @mouseenter="preloadOperationRoute(operation)"
                   >
                     <div class="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-lg mx-auto mb-4">
                       <Icon :name="operation.icon" class="w-8 h-8 text-blue-600" />
@@ -79,17 +71,6 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Contrôles du carousel -->
-          <div class="flex justify-center mt-8 space-x-2">
-            <button 
-              v-for="(slide, index) in carouselSlides" 
-              :key="index"
-              @click="currentSlide = index"
-              class="w-3 h-3 rounded-full transition-colors"
-              :class="currentSlide === index ? 'bg-blue-600' : 'bg-gray-300'"
-            ></button>
           </div>
         </div>
       </div>
@@ -199,165 +180,202 @@
 </template>
 
 <script setup>
-// Meta données
+import { usePerformance } from '~/composables/core/usePerformance'
+
+// ✅ Configuration SEO de la page
 useHead({
   title: 'Form Modulable - Simplifiez vos démarches administratives',
   meta: [
-    { name: 'description', content: 'Plateforme moderne pour effectuer toutes vos démarches administratives en ligne. Fini les files d\'attente !' }
+    { name: 'description', content: 'Effectuez toutes vos démarches administratives en ligne, rapidement et en toute sécurité. Passeport, carte d\'identité, permis de conduire et plus encore.' },
+    { name: 'keywords', content: 'démarches administratives, en ligne, passeport, carte identité, permis conduire' },
+    { property: 'og:title', content: 'Form Modulable - Démarches administratives simplifiées' },
+    { property: 'og:description', content: 'Fini les files d\'attente ! Effectuez vos démarches administratives en ligne.' },
+    { property: 'og:type', content: 'website' }
   ]
 })
 
-// État du carousel
+// ✅ Intégration des optimisations de performance
+const { 
+  useOptimizedDebounce, 
+  useIntersectionObserver, 
+  preloadRoute,
+  measurePerformance 
+} = usePerformance()
+
+// État du carousel avec performance monitoring
 const currentSlide = ref(0)
+const showTestimonials = ref(false)
+const heroSection = ref(null)
+const operationsSection = ref(null)
 
-// Données du carousel
-const operations = [
+// ✅ Données des slides du carousel
+const carouselSlides = ref([
+  [
+    {
+      id: 1,
+      title: "Demande de passeport",
+      description: "Renouvelez ou demandez votre passeport en quelques clics",
+      icon: "heroicons:identification",
+      duration: "5 min",
+      type: "form"
+    },
+    {
+      id: 2,
+      title: "Carte d'identité",
+      description: "Demande de carte nationale d'identité simplifiée",
+      icon: "heroicons:credit-card",
+      duration: "3 min",
+      type: "form"
+    },
+    {
+      id: 3,
+      title: "Permis de conduire",
+      description: "Toutes vos démarches liées au permis de conduire",
+      icon: "heroicons:truck",
+      duration: "7 min",
+      type: "form"
+    }
+  ],
+  [
+    {
+      id: 4,
+      title: "Acte de naissance",
+      description: "Demande d'extrait d'acte de naissance",
+      icon: "heroicons:document-text",
+      duration: "2 min",
+      type: "form"
+    },
+    {
+      id: 5,
+      title: "Certificat de vie",
+      description: "Obtention de certificat de vie en ligne",
+      icon: "heroicons:check-badge",
+      duration: "4 min",
+      type: "form"
+    },
+    {
+      id: 6,
+      title: "Changement d'adresse",
+      description: "Signalement de changement d'adresse",
+      icon: "heroicons:home",
+      duration: "6 min",
+      type: "form"
+    }
+  ]
+])
+
+// ✅ Données des avantages
+const advantages = ref([
   {
     id: 1,
-    title: 'Carte d\'identité',
-    description: 'Renouvellement et première demande de carte d\'identité',
-    icon: 'heroicons:identification',
-    duration: '5 min'
+    title: "Rapide et efficace",
+    description: "Effectuez vos démarches en quelques minutes seulement",
+    icon: "heroicons:lightning-bolt"
   },
   {
     id: 2,
-    title: 'Passeport',
-    description: 'Demande de passeport biométrique en ligne',
-    icon: 'heroicons:document-text',
-    duration: '8 min'
+    title: "Disponible 24h/24",
+    description: "Accédez à nos services à tout moment, même le weekend",
+    icon: "heroicons:clock"
   },
   {
     id: 3,
-    title: 'Permis de conduire',
-    description: 'Renouvellement et duplicata de permis',
-    icon: 'heroicons:truck',
-    duration: '3 min'
+    title: "Sécurisé",
+    description: "Vos données sont protégées par un chiffrement de niveau bancaire",
+    icon: "heroicons:shield-check"
   },
   {
     id: 4,
-    title: 'Certificat de naissance',
-    description: 'Demande d\'acte de naissance en ligne',
-    icon: 'heroicons:user-plus',
-    duration: '2 min'
+    title: "Suivi en temps réel",
+    description: "Suivez l'avancement de vos dossiers à tout moment",
+    icon: "heroicons:eye"
   },
   {
     id: 5,
-    title: 'Certificat de mariage',
-    description: 'Acte de mariage et livret de famille',
-    icon: 'heroicons:heart',
-    duration: '2 min'
+    title: "Support dédié",
+    description: "Une équipe disponible pour vous accompagner",
+    icon: "heroicons:chat-bubble-bottom-center"
   },
   {
     id: 6,
-    title: 'Aide au logement',
-    description: 'Demande d\'APL et autres aides',
-    icon: 'heroicons:home',
-    duration: '10 min'
-  },
-  {
-    id: 7,
-    title: 'Déclaration d\'impôts',
-    description: 'Déclaration de revenus simplifiée',
-    icon: 'heroicons:calculator',
-    duration: '15 min'
-  },
-  {
-    id: 8,
-    title: 'Inscription Pôle Emploi',
-    description: 'Inscription et actualisation mensuelle',
-    icon: 'heroicons:briefcase',
-    duration: '7 min'
-  },
-  {
-    id: 9,
-    title: 'Changement d\'adresse',
-    description: 'Notification de changement d\'adresse',
-    icon: 'heroicons:map-pin',
-    duration: '3 min'
+    title: "Économique",
+    description: "Réduisez vos frais de déplacement et gagnez du temps",
+    icon: "heroicons:currency-euro"
   }
-]
+])
 
-// Grouper les opérations par 3 pour le carousel
-const carouselSlides = computed(() => {
-  const slides = []
-  for (let i = 0; i < operations.length; i += 3) {
-    slides.push(operations.slice(i, i + 3))
-  }
-  return slides
-})
-
-// Avantages
-const advantages = [
+// ✅ Données des témoignages
+const testimonials = ref([
   {
     id: 1,
-    title: 'Gain de temps',
-    description: 'Évitez les files d\'attente et les déplacements inutiles. Effectuez vos démarches en quelques clics.',
-    icon: 'heroicons:clock'
+    name: "Marie Dubois",
+    role: "Particulière",
+    content: "J'ai pu renouveler mon passeport en 5 minutes depuis chez moi. C'est révolutionnaire !"
   },
   {
     id: 2,
-    title: 'Disponible 24h/24',
-    description: 'Accédez à nos services à tout moment, depuis chez vous ou votre bureau.',
-    icon: 'heroicons:globe-alt'
+    name: "Pierre Martin",
+    role: "Chef d'entreprise",
+    content: "Fini les files d'attente ! Je gère toutes mes démarches administratives en ligne."
   },
   {
     id: 3,
-    title: 'Sécurisé',
-    description: 'Vos données sont protégées par les dernières technologies de sécurité.',
-    icon: 'heroicons:shield-check'
-  },
-  {
-    id: 4,
-    title: 'Suivi en temps réel',
-    description: 'Suivez l\'avancement de vos démarches en temps réel avec des notifications.',
-    icon: 'heroicons:eye'
-  },
-  {
-    id: 5,
-    title: 'Support dédié',
-    description: 'Notre équipe est disponible pour vous accompagner à chaque étape.',
-    icon: 'heroicons:chat-bubble-left-right'
-  },
-  {
-    id: 6,
-    title: 'Économique',
-    description: 'Réduisez vos coûts de transport et optimisez votre temps précieux.',
-    icon: 'heroicons:banknotes'
+    name: "Sophie Leroy",
+    role: "Étudiante",
+    content: "Interface intuitive et processus ultra-rapide. Je recommande vivement !"
   }
-]
+])
 
-// Témoignages
-const testimonials = [
-  {
-    id: 1,
-    name: 'Marie Dubois',
-    role: 'Enseignante',
-    content: 'J\'ai pu renouveler ma carte d\'identité en 5 minutes depuis mon domicile. C\'est révolutionnaire !'
+// ✅ Debounced navigation du carousel
+const debouncedSlideChange = useOptimizedDebounce((index) => {
+  measurePerformance('Carousel Slide Change', () => {
+    currentSlide.value = index
+  })
+}, 100)
+
+// ✅ Observer pour charger les témoignages seulement quand visibles
+useIntersectionObserver(
+  operationsSection,
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && !showTestimonials.value) {
+        showTestimonials.value = true
+        // Précharger la route about une fois les témoignages visibles
+        preloadRoute('/about')
+      }
+    })
   },
-  {
-    id: 2,
-    name: 'Pierre Martin',
-    role: 'Entrepreneur',
-    content: 'Fini les après-midi perdus en mairie ! Cette plateforme m\'a fait gagner un temps précieux.'
-  },
-  {
-    id: 3,
-    name: 'Sophie Leroy',
-    role: 'Mère de famille',
-    content: 'Avec 3 enfants, impossible de faire la queue. Cette solution est parfaite pour moi.'
+  { rootMargin: '100px' }
+)
+
+// ✅ Préchargement optimisé des routes d'opérations
+const preloadOperationRoute = useOptimizedDebounce((operation) => {
+  if (operation.type === 'form') {
+    preloadRoute('/form')
   }
-]
+}, 200)
 
-// Auto-avancement du carousel
+// Auto-avancement optimisé du carousel
 onMounted(() => {
-  setInterval(() => {
-    currentSlide.value = (currentSlide.value + 1) % carouselSlides.value.length
-  }, 5000)
+  // ✅ Vérifier que carouselSlides existe avant de démarrer le carousel
+  if (carouselSlides.value && carouselSlides.value.length > 0) {
+    const interval = setInterval(() => {
+      const nextSlide = (currentSlide.value + 1) % carouselSlides.value.length
+      debouncedSlideChange(nextSlide)
+    }, 5000)
+    
+    onBeforeUnmount(() => {
+      clearInterval(interval)
+    })
+  }
 })
 
-// Fonction pour scroller vers les opérations
+// ✅ Fonction pour scroller vers les opérations avec smooth behavior
 const scrollToOperations = () => {
-  document.getElementById('operations').scrollIntoView({ behavior: 'smooth' })
+  const element = document.getElementById('operations')
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 }
 </script>
 

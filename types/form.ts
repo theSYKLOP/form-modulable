@@ -136,3 +136,27 @@ export interface ConditionalLogic {
   logicalOperator: 'AND' | 'OR'
   rules: ConditionalRule[]
 }
+
+// ✅ Interface principale pour le formulaire basée sur le modèle Prisma
+export interface Form {
+  id: string
+  title: string
+  description?: string | null
+  mode: 'EDIT' | 'VIEW'
+  submitButtonText?: string | null
+  cancelButtonText?: string | null
+  resetButtonText?: string | null
+  validateOnSubmit: boolean
+  validateOnBlur: boolean
+  validateOnChange: boolean
+  layout: 'VERTICAL' | 'HORIZONTAL'
+  spacing: 'COMPACT' | 'NORMAL' | 'RELAXED'
+  isPublished: boolean
+  isTemplate: boolean
+  templateId?: string | null
+  steps?: FormStep[] | null // JSON des étapes
+  createdAt: Date | string
+  updatedAt: Date | string
+  publishedAt?: Date | string | null
+  userId: string
+}

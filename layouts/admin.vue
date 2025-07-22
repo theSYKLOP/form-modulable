@@ -306,6 +306,12 @@ onMounted(() => {
 
 // Vérifier les permissions admin
 onMounted(() => {
+  // ✅ Ne pas vérifier les permissions sur la page de loading qui gère sa propre vérification
+  const route = useRoute()
+  if (route.path === '/admin/loading') {
+    return
+  }
+  
   if (!user.value || user.value.role !== 'ADMIN') {
     throw createError({
       statusCode: 403,

@@ -392,6 +392,51 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Ajoutons cette méthode dans le store d'authentification
+
+  // ✅ Méthode d'initialisation rapide depuis localStorage
+  const initializeAuth = () => {
+    // ✅ Utiliser import.meta.client au lieu de process.client (non déprécié)
+    if (import.meta.client) {
+      try {
+        // ✅ Le store utilise déjà useLocalStorage, donc les données sont déjà synchronisées
+        // On peut juste vérifier si on a des données valides
+        if (authData.value.token && authData.value.user && !authData.value.isAuthenticated) {
+          // ✅ Restaurer l'état d'authentification depuis les données locales
+          authData.value.isAuthenticated = true
+          
+          // ✅ Optionnel : Vérifier la validité du token (non bloquant)
+          verifyTokenAsync(authData.value.token)
+        }
+      } catch (error) {
+        console.error('Erreur initialisation auth:', error)
+        // ✅ En cas d'erreur, réinitialiser l'état
+        authData.value = {
+          token: undefined,
+          user: undefined,
+          isAuthenticated: false
+        }
+      }
+    }
+  }
+
+  // ✅ Vérification async du token (non bloquante)
+  const verifyTokenAsync = async (tokenToVerify: string): Promise<void> => {
+    try {
+      const response = await $fetch<ApiResponse>('/api/auth/verify', {
+        headers: { Authorization: `Bearer ${tokenToVerify}` }
+      })
+      
+      if (!response.success) {
+        // ✅ Token invalide, déconnecter
+        await logout()
+      }
+    } catch (error) {
+      // ✅ En cas d'erreur réseau, garder l'état local mais logger
+      console.warn('Impossible de vérifier le token:', error)
+    }
+  }
+
   return {
     // État
     authData: readonly(authData),
@@ -421,5 +466,9 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken,
     forgotPassword,
     resetPasswordWithToken,
+
+    // ✅ Méthodes d'initialisation ajoutées
+    initializeAuth,
+    verifyTokenAsync
   }
 })

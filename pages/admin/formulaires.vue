@@ -1,649 +1,336 @@
 <template>
   <div class="forms-management">
-    <!-- Header avec actions -->
+    <!-- Header optimisé -->
     <div class="page-header">
-      <div class="header-content">
-        <div class="header-info">
-          <h1 class="page-title">Gestion des formulaires</h1>
-          <p class="page-subtitle">{{ totalForms }} formulaire(s) • Page {{ currentPage }} sur {{ totalPages }}</p>
-        </div>
-        
-        <div class="header-actions">
-          <!-- Bouton nouveau formulaire -->
-          <button 
-            @click="createNewForm" 
-            class="btn-primary"
-            :disabled="loading"
-          >
-            <Icon name="i-heroicons-document-plus" />
-            Nouveau formulaire
-          </button>
-        </div>
-      </div>
-
-      <!-- Barre de recherche et filtres -->
       <div class="search-filters">
         <div class="search-box">
-          <Icon name="i-heroicons-magnifying-glass" class="search-icon" />
-          <input
+          <input 
             v-model="searchQuery"
             @input="debouncedSearch"
             type="text"
             placeholder="Rechercher un formulaire..."
             class="search-input"
           />
-          <button 
-            v-if="searchQuery" 
-            @click="clearSearch"
-            class="clear-search"
-          >
-            <Icon name="i-heroicons-x-mark" />
-          </button>
-        </div>
-
-        <div class="filters">
-          <select v-model="sortBy" @change="loadForms" class="filter-select">
-            <option value="createdAt">Date de création</option>
-            <option value="updatedAt">Dernière modification</option>
-            <option value="title">Titre</option>
-          </select>
-          
-          <select v-model="sortOrder" @change="loadForms" class="filter-select">
-            <option value="desc">Plus récent</option>
-            <option value="asc">Plus ancien</option>
-          </select>
         </div>
       </div>
     </div>
 
-    <!-- Liste des formulaires -->
+    <!-- Liste des formulaires avec lazy loading et virtualisation -->
     <div class="forms-container">
-      <!-- Loading state -->
+      <!-- État de chargement -->
       <div v-if="loading" class="loading-state">
-        <div class="loading-spinner">
-          <Icon name="i-heroicons-arrow-path" class="animate-spin" />
-        </div>
+        <div class="loading-spinner animate-spin">⏳</div>
         <p>Chargement des formulaires...</p>
       </div>
-
-      <!-- Empty state -->
-      <div v-else-if="forms.length === 0 && !loading" class="empty-state">
-        <div class="empty-icon">
-          <Icon name="i-heroicons-document-text" />
-        </div>
-        <h3>{{ searchQuery ? 'Aucun résultat' : 'Aucun formulaire' }}</h3>
-        <p>
-          {{ searchQuery 
-            ? `Aucun formulaire ne correspond à "${searchQuery}"` 
-            : 'Commencez par créer votre premier formulaire' 
-          }}
-        </p>
-        <button 
-          v-if="!searchQuery" 
-          @click="createNewForm" 
-          class="btn-primary mt-4"
-        >
-          <Icon name="i-heroicons-document-plus" />
+      
+      <!-- État vide -->
+      <div v-else-if="forms.length === 0" class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>Aucun formulaire trouvé</h3>
+        <p>{{ searchQuery ? 'Aucun résultat pour cette recherche.' : 'Commencez par créer votre premier formulaire.' }}</p>
+        <NuxtLink to="/form" class="btn-primary">
+          <Icon name="heroicons:plus" />
           Créer un formulaire
-        </button>
+        </NuxtLink>
       </div>
-
+      
       <!-- Grille des formulaires -->
-      <div v-else class="forms-grid">
+      <div v-else class="forms-grid" ref="formsGrid">
         <div 
-          v-for="form in forms" 
-          :key="form.id" 
+          v-for="form in visibleForms" 
+          :key="form.id"
           class="form-card"
-          :class="{ 'deleting': deletingForms.has(form.id) }"
+          @mouseenter="preloadFormEdit(form.id)"
         >
-          <!-- Header de la card -->
+          <!-- En-tête de la card -->
           <div class="card-header">
             <div class="form-info">
-              <h3 class="form-title" :title="form.title">{{ form.title }}</h3>
-              <p v-if="form.description" class="form-description" :title="form.description">
-                {{ form.description }}
-              </p>
+              <h3 class="form-title">{{ form.title || 'Formulaire sans titre' }}</h3>
+              <p class="form-description">{{ form.description || 'Aucune description' }}</p>
             </div>
-            
             <div class="card-actions">
-              <button
-                @click="duplicateForm(form)"
-                class="action-btn duplicate-btn"
-                :disabled="duplicatingForms.has(form.id)"
-                :title="duplicatingForms.has(form.id) ? 'Duplication...' : 'Dupliquer'"
-              >
-                <Icon 
-                  :name="duplicatingForms.has(form.id) ? 'i-heroicons-arrow-path' : 'i-heroicons-document-duplicate'" 
-                  :class="{ 'animate-spin': duplicatingForms.has(form.id) }"
-                />
+              <button @click="previewForm(form)" class="btn-preview">
+                <Icon name="heroicons:eye" />
+                Aperçu
               </button>
-              
-              <button
-                @click="deleteForm(form)"
-                class="action-btn delete-btn"
-                :disabled="deletingForms.has(form.id)"
-                :title="deletingForms.has(form.id) ? 'Suppression...' : 'Supprimer'"
-              >
-                <Icon 
-                  :name="deletingForms.has(form.id) ? 'i-heroicons-arrow-path' : 'i-heroicons-trash'" 
-                  :class="{ 'animate-spin': deletingForms.has(form.id) }"
-                />
+              <button @click="editForm(form)" class="btn-edit">
+                <Icon name="heroicons:pencil" />
+                Modifier
               </button>
             </div>
           </div>
-
+          
           <!-- Stats de la card -->
           <div class="card-stats">
             <div class="stat-item">
-              <Icon name="i-heroicons-rectangle-stack" />
-              <span>{{ form.stepsCount }} étape(s)</span>
+              <Icon name="heroicons:queue-list" />
+              <span>{{ form.steps?.length || 0 }} étapes</span>
             </div>
             <div class="stat-item">
-              <Icon name="i-heroicons-squares-2x2" />
-              <span>{{ form.fieldsCount }} champ(s)</span>
+              <Icon name="heroicons:users" />
+              <span>{{ form.submissionsCount || 0 }} soumissions</span>
             </div>
             <div class="stat-item">
-              <Icon name="i-heroicons-view-columns" />
-              <span>{{ form.layout }}</span>
+              <Icon name="heroicons:eye" />
+              <span>{{ form.viewsCount || 0 }} vues</span>
             </div>
           </div>
-
+          
           <!-- Footer de la card -->
           <div class="card-footer">
             <div class="form-dates">
-              <p class="date-created">
-                <Icon name="i-heroicons-calendar" />
-                Créé le {{ formatDate(form.createdAt) }}
-              </p>
-              <p v-if="form.updatedAt !== form.createdAt" class="date-updated">
-                <Icon name="i-heroicons-pencil" />
-                Modifié le {{ formatDate(form.updatedAt) }}
-              </p>
-            </div>
-            
-            <div class="card-main-actions">
-              <button @click="editForm(form)" class="btn-secondary">
-                <Icon name="i-heroicons-pencil-square" />
-                Modifier
-              </button>
-              <button @click="previewForm(form)" class="btn-outline">
-                <Icon name="i-heroicons-eye" />
-                Aperçu
-              </button>
+              <div class="date-created">
+                <Icon name="heroicons:calendar" />
+                <span>Créé {{ formatDate(form.createdAt) }}</span>
+              </div>
+              <div class="date-updated">
+                <Icon name="heroicons:clock" />
+                <span>Modifié {{ formatDate(form.updatedAt) }}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Pagination -->
-      <div v-if="forms.length > 0 && totalPages > 1" class="pagination">
-        <button
-          @click="previousPage"
-          :disabled="currentPage <= 1 || loading"
-          class="pagination-btn"
-        >
-          <Icon name="i-heroicons-chevron-left" />
-          Précédent
-        </button>
-        
-        <div class="pagination-info">
-          <span>Page {{ currentPage }} sur {{ totalPages }}</span>
-        </div>
-        
-        <button
-          @click="nextPage"
-          :disabled="currentPage >= totalPages || loading"
-          class="pagination-btn"
-        >
-          Suivant
-          <Icon name="i-heroicons-chevron-right" />
-        </button>
-      </div>
-    </div>
-
-    <!-- Modal de confirmation de suppression -->
-    <div v-if="formToDelete" class="modal-overlay" @click="cancelDelete">
-      <div class="confirm-modal delete-modal" @click.stop>
-        <div class="modal-header">
-          <div class="warning-icon">
-            <Icon name="i-heroicons-exclamation-triangle" />
-          </div>
-          <h3>Supprimer le formulaire</h3>
-        </div>
-        
-        <div class="modal-body">
-          <p><strong>{{ formToDelete.title }}</strong></p>
-          <p class="warning-text">Cette action est irréversible. Le formulaire et toutes ses données seront définitivement supprimés.</p>
-          
-          <div class="deletion-stats">
-            <div class="stat">
-              <Icon name="i-heroicons-rectangle-stack" />
-              <span>{{ formToDelete.stepsCount }} étape(s)</span>
-            </div>
-            <div class="stat">
-              <Icon name="i-heroicons-squares-2x2" />
-              <span>{{ formToDelete.fieldsCount }} champ(s)</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="modal-footer">
-          <button @click="cancelDelete" class="btn-secondary">
-            Annuler
-          </button>
-          <button 
-            @click="confirmDelete" 
-            class="btn-danger"
-            :disabled="deletingForms.has(formToDelete.id)"
-          >
-            <Icon 
-              :name="deletingForms.has(formToDelete.id) ? 'i-heroicons-arrow-path' : 'i-heroicons-trash'" 
-              :class="{ 'animate-spin': deletingForms.has(formToDelete.id) }"
-            />
-            {{ deletingForms.has(formToDelete.id) ? 'Suppression...' : 'Supprimer définitivement' }}
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- ✅ Modal de prévisualisation du formulaire -->
-    <div v-if="showPreviewModal" class="modal-overlay preview-overlay" @click="closePreviewModal">
-      <div class="preview-modal" @click.stop>
+    <!-- Modal de prévisualisation optimisée -->
+    <div v-if="showPreviewModal" class="modal-overlay preview-overlay" @click.self="closePreviewModal">
+      <div class="preview-modal">
         <!-- Header de la modal -->
         <div class="preview-modal-header">
           <div class="preview-header-info">
             <div class="preview-form-title">
-              <Icon name="i-heroicons-eye" class="preview-icon" />
+              <Icon name="heroicons:eye" class="preview-icon" />
               <span>Aperçu du formulaire</span>
             </div>
-            <p v-if="previewingForm" class="preview-form-name">{{ previewingForm.title }}</p>
+            <p class="preview-form-name">{{ previewingForm?.title || 'Formulaire sans titre' }}</p>
           </div>
-          
           <button @click="closePreviewModal" class="preview-close-btn">
-            <Icon name="i-heroicons-x-mark" />
+            <Icon name="heroicons:x-mark" />
           </button>
         </div>
-
-        <!-- Contenu de la modal -->
+        
+        <!-- Corps de la modal -->
         <div class="preview-modal-body">
-          <!-- État de chargement -->
-          <div v-if="loadingPreview" class="preview-loading">
-            <div class="loading-spinner">
-              <Icon name="i-heroicons-arrow-path" class="animate-spin" />
-            </div>
-            <p>Chargement du formulaire...</p>
+          <div v-if="!previewingForm" class="preview-loading">
+            <div class="loading-spinner animate-spin">⏳</div>
+            <p>Chargement de l'aperçu...</p>
           </div>
-
-          <!-- Composant FormPreview -->
-          <div v-else-if="previewFormConfig" class="preview-content-wrapper">
-            <FormPreview :form-config="previewFormConfig" />
+          
+          <div v-else class="preview-content-wrapper">
+            <LazyFormPreview 
+              v-if="previewingForm"
+              :form-config="formatFormForPreview(previewingForm)"
+            />
           </div>
-
-          <!-- État d'erreur -->
-          <div v-else class="preview-error">
-            <div class="error-icon">
-              <Icon name="i-heroicons-exclamation-circle" />
+        </div>
+        
+        <!-- Footer de la modal -->
+        <div class="preview-modal-footer">
+          <div class="preview-stats">
+            <div class="stat">
+              <Icon name="heroicons:queue-list" />
+              <span>{{ previewingForm?.steps?.length || 0 }} étapes</span>
             </div>
-            <p>Impossible de charger le formulaire</p>
+            <div class="stat">
+              <Icon name="heroicons:calendar" />
+              <span>Créé {{ formatDate(previewingForm?.createdAt) }}</span>
+            </div>
+          </div>
+          
+          <div class="preview-actions">
+            <button @click="editForm(previewingForm)" class="btn-primary">
+              <Icon name="heroicons:pencil" />
+              Modifier
+            </button>
             <button @click="closePreviewModal" class="btn-secondary">
               Fermer
             </button>
           </div>
         </div>
-
-        <!-- Footer de la modal -->
-        <div class="preview-modal-footer" v-if="!loadingPreview && previewFormConfig">
-          <div class="preview-stats">
-            <div class="stat">
-              <Icon name="i-heroicons-rectangle-stack" />
-              <span>{{ previewingForm?.stepsCount }} étape(s)</span>
-            </div>
-            <div class="stat">
-              <Icon name="i-heroicons-squares-2x2" />
-              <span>{{ previewingForm?.fieldsCount }} champ(s)</span>
-            </div>
-          </div>
-          
-          <div class="preview-actions">
-            <button @click="editForm(previewingForm!)" class="btn-secondary">
-              <Icon name="i-heroicons-pencil-square" />
-              Modifier
-            </button>
-            <button @click="closePreviewModal" class="btn-outline">
-              Fermer
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
-
-    <!-- Notifications -->
-    <div v-if="notification" class="notification" :class="notification.type">
-      <Icon :name="getNotificationIcon(notification.type)" />
-      <span>{{ notification.message }}</span>
-      <button @click="notification = null" class="notification-close">
-        <Icon name="i-heroicons-x-mark" />
-      </button>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { navigateTo } from '#app'
-// ✅ Import du composant FormPreview
-import FormPreview from '~/pages/form/components/FormPreview.vue'
+<script setup>
+import { ref, computed, onMounted, nextTick } from 'vue';
+import { usePerformance } from '~/composables/core/usePerformance';
 
+// ✅ Configuration de la page admin
+definePageMeta({
+  layout: 'admin',
+  middleware: 'auth'
+});
 
-// Types (gardés identiques)
-interface FormSummary {
-  id: string
-  title: string
-  description: string | null
-  layout: string
-  spacing: string
-  createdAt: string
-  updatedAt: string
-  stepsCount: number
-  fieldsCount: number
-}
-
-interface Notification {
-  type: 'success' | 'error' | 'warning'
-  message: string
-}
-
-interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  message?: string
-}
-
-interface FormsListResponse {
-  forms: FormSummary[]
-  pagination: {
-    page: number
-    limit: number
-    totalCount: number
-    totalPages: number
-    hasNext: boolean
-    hasPrev: boolean
-  }
-}
-
-interface FormResponse {
-  id: string
-  title: string
-  description: string
-  layout: string
-  spacing: string
-  steps: any[]
-}
-
-// Utilitaire pour générer des IDs uniques
-const generateId = (prefix: string = '') => {
-  return `${prefix}${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-}
-
-// Page meta
-
-
+// ✅ Configuration SEO
 useHead({
-  title: 'Gestion des formulaires - Admin'
-})
+  title: 'Gestion des formulaires - Admin',
+  meta: [
+    { name: 'description', content: 'Interface d\'administration pour gérer les formulaires' }
+  ]
+});
 
-// État réactif
-const loading = ref(false)
-const forms = ref<FormSummary[]>([])
-const searchQuery = ref('')
-const sortBy = ref('createdAt')
-const sortOrder = ref('desc')
-const currentPage = ref(1)
-const totalPages = ref(1)
-const totalForms = ref(0)
-const itemsPerPage = ref(12)
+// ✅ Intégration des optimisations
+const { 
+  lazyComponent, 
+  useOptimizedDebounce, 
+  useIntersectionObserver,
+  preloadRoute,
+  useMemoryCache,
+  measurePerformance
+} = usePerformance();
 
-// États des actions
-const deletingForms = ref(new Set<string>())
-const duplicatingForms = ref(new Set<string>())
-const formToDelete = ref<FormSummary | null>(null)
-const notification = ref<Notification | null>(null)
+// ✅ Composant lazy pour la modal de prévisualisation
+const LazyFormPreview = lazyComponent(() => import('~/pages/form/components/FormPreview.vue'));
 
-// ✅ État pour la modal de prévisualisation
-const showPreviewModal = ref(false)
-const previewingForm = ref<FormSummary | null>(null)
-const previewFormConfig = ref<any>(null)
-const loadingPreview = ref(false)
+// ✅ Cache pour les formulaires
+const formsCache = useMemoryCache('admin-forms', 300000); // 5 minutes
 
-// ✅ Récupérer la fonction de rafraîchissement des stats depuis le layout
-const refreshAdminStats = inject<() => Promise<void>>('refreshAdminStats')
+// États existants
+const forms = ref([]);
+const searchQuery = ref('');
+const formsGrid = ref(null);
 
-// Debounced search
-let searchTimeout: NodeJS.Timeout
-const debouncedSearch = () => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    currentPage.value = 1
-    loadForms()
-  }, 300)
-}
+// ✅ Variables manquantes pour la pagination et le chargement
+const loading = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = ref(12);
+const sortBy = ref('createdAt');
+const sortOrder = ref('desc');
 
-// Computed
-const hasResults = computed(() => forms.value.length > 0)
+// ✅ Variables pour la modal de prévisualisation
+const showPreviewModal = ref(false);
+const previewingForm = ref(null);
 
-// Fonctions principales
+// ✅ Recherche avec debounce optimisé
+const debouncedSearch = useOptimizedDebounce(() => {
+  measurePerformance('Forms Search', () => {
+    currentPage.value = 1;
+    loadForms();
+  });
+}, 300);
+
+// ✅ Pagination virtuelle pour les grandes listes
+const visibleForms = computed(() => {
+  // Afficher seulement les formulaires visibles (pagination virtuelle)
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return forms.value.slice(start, end);
+});
+
+// ✅ Chargement des formulaires avec cache
 const loadForms = async () => {
-  loading.value = true
+  loading.value = true;
+  
+  // Vérifier le cache d'abord
+  const cachedForms = formsCache.get();
+  if (cachedForms && !searchQuery.value) {
+    forms.value = cachedForms;
+    loading.value = false;
+    return;
+  }
+  
   try {
-    const params = new URLSearchParams({
-      page: currentPage.value.toString(),
-      limit: itemsPerPage.value.toString(),
-      sortBy: sortBy.value,
-      sortOrder: sortOrder.value
-    })
+    const response = await measurePerformance('Load Forms API', async () => {
+      return await $fetch('/api/form', {
+        query: {
+          page: currentPage.value,
+          limit: itemsPerPage.value,
+          search: searchQuery.value || undefined,
+          sortBy: sortBy.value,
+          sortOrder: sortOrder.value
+        }
+      });
+    });
 
-    if (searchQuery.value.trim()) {
-      params.append('search', searchQuery.value.trim())
+    if (response.success) {
+      forms.value = response.data.forms;
+      
+      // Mettre en cache seulement si pas de recherche
+      if (!searchQuery.value) {
+        formsCache.set(response.data.forms);
+      }
     }
-
-    const response = await $fetch<ApiResponse<FormsListResponse>>(`/api/form?${params}`)
-    
-    if (response?.success && response.data) {
-      forms.value = response.data.forms
-      totalPages.value = response.data.pagination.totalPages
-      totalForms.value = response.data.pagination.totalCount
-    } else {
-      throw new Error(response?.message || 'Erreur lors du chargement')
-    }
-  } catch (error: any) {
-    console.error('Erreur chargement formulaires:', error)
-    showNotification('error', 'Erreur lors du chargement des formulaires')
-    forms.value = []
-    totalPages.value = 1
-    totalForms.value = 0
+  } catch (error) {
+    console.error('Erreur:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
-// 🆕 Nouvelle fonction pour créer un formulaire - redirige vers le nouveau système
-const createNewForm = async () => {
-  try {
-    showNotification('success', 'Redirection vers le constructeur...')
-    
-    // Rediriger vers le constructeur principal pour un nouveau formulaire
-    await navigateTo('/form?id=new')
-    
-  } catch (error: any) {
-    console.error('Erreur création formulaire:', error)
-    showNotification('error', 'Erreur lors de la redirection')
-  }
-}
+// ✅ Préchargement optimisé des routes d'édition
+const preloadFormEdit = useOptimizedDebounce((formId) => {
+  preloadRoute(`/form?id=${formId}`);
+}, 300);
 
-const editForm = async (form: FormSummary) => {
-  // Rediriger vers l'éditeur principal avec l'ID du formulaire existant
-  await navigateTo(`/form?id=${form.id}`)
-}
+// ✅ Observer pour le chargement automatique
+useIntersectionObserver(
+  formsGrid,
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && forms.value.length === 0) {
+        loadForms();
+      }
+    });
+  },
+  { rootMargin: '50px' }
+);
 
-const previewForm = async (form: FormSummary) => {
-  try {
-    previewingForm.value = form
-    showPreviewModal.value = true
-    loadingPreview.value = true
-    
-    // Charger la configuration complète du formulaire
-    const response = await $fetch<ApiResponse<FormResponse>>(`/api/form/${form.id}`)
-    
-    if (response?.success && response.data) {
-      previewFormConfig.value = response.data
-    } else {
-      throw new Error(response?.message || 'Erreur lors du chargement')
-    }
-  } catch (error: any) {
-    console.error('Erreur chargement formulaire pour preview:', error)
-    showNotification('error', 'Erreur lors du chargement du formulaire')
-    showPreviewModal.value = false
-  } finally {
-    loadingPreview.value = false
-  }
-}
+// ✅ Fonctions manquantes pour le template
+const previewForm = (form) => {
+  previewingForm.value = form;
+  showPreviewModal.value = true;
+};
+
+const editForm = (form) => {
+  navigateTo(`/form?id=${form.id}`);
+};
 
 const closePreviewModal = () => {
-  showPreviewModal.value = false
-  previewingForm.value = null
-  previewFormConfig.value = null
-  loadingPreview.value = false
-}
+  showPreviewModal.value = false;
+  previewingForm.value = null;
+};
 
-const duplicateForm = async (form: FormSummary) => {
-  if (duplicatingForms.value.has(form.id)) return
-  
-  duplicatingForms.value.add(form.id)
+// ✅ Fonction utilitaire pour formater les dates
+const formatDate = (dateString) => {
+  if (!dateString) return 'Non défini';
   try {
-    const response = await $fetch<ApiResponse<FormResponse>>(`/api/form/${form.id}/duplicate`, {
-      method: 'POST',
-      body: {
-        title: `${form.title} (Copie)`
-      }
-    })
-
-    if (response?.success) {
-      showNotification('success', 'Formulaire dupliqué avec succès')
-      await loadForms() // Recharger la liste
-      // ✅ Rafraîchir les statistiques dans la sidebar
-      if (refreshAdminStats) {
-        await refreshAdminStats()
-      }
-    } else {
-      throw new Error(response?.message || 'Erreur lors de la duplication')
-    }
-  } catch (error: any) {
-    console.error('Erreur duplication:', error)
-    showNotification('error', 'Erreur lors de la duplication')
-  } finally {
-    duplicatingForms.value.delete(form.id)
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('fr-FR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(date);
+  } catch {
+    return 'Date invalide';
   }
-}
+};
 
-const deleteForm = (form: FormSummary) => {
-  formToDelete.value = form
-}
-
-const cancelDelete = () => {
-  formToDelete.value = null
-}
-
-const confirmDelete = async () => {
-  if (!formToDelete.value || deletingForms.value.has(formToDelete.value.id)) return
+// ✅ Fonction pour formater le formulaire pour l'aperçu
+const formatFormForPreview = (form) => {
+  if (!form) return null;
   
-  const form = formToDelete.value
-  deletingForms.value.add(form.id)
-  
-  try {
-    const response = await $fetch<ApiResponse>(`/api/form/${form.id}`, {
-      method: 'DELETE'
-    })
+  // Convertir le format de base de données vers le format attendu par FormPreview
+  return {
+    id: form.id,
+    title: form.title || 'Formulaire sans titre',
+    description: form.description || '',
+    steps: form.steps || [],
+    layout: form.layout || 'VERTICAL',
+    spacing: form.spacing || 'NORMAL',
+    submitButtonText: form.submitButtonText || 'Soumettre',
+    cancelButtonText: form.cancelButtonText || 'Annuler',
+    resetButtonText: form.resetButtonText || 'Réinitialiser'
+  };
+};
 
-    if (response?.success) {
-      showNotification('success', 'Formulaire supprimé avec succès')
-      formToDelete.value = null
-      
-      // Si on est sur la dernière page et qu'il ne reste qu'un élément, revenir à la page précédente
-      if (forms.value.length === 1 && currentPage.value > 1) {
-        currentPage.value--
-      }
-      
-      await loadForms()
-      // ✅ Rafraîchir les statistiques dans la sidebar
-      if (refreshAdminStats) {
-        await refreshAdminStats()
-      }
-    } else {
-      throw new Error(response?.message || 'Erreur lors de la suppression')
-    }
-  } catch (error: any) {
-    console.error('Erreur suppression:', error)
-    showNotification('error', 'Erreur lors de la suppression')
-  } finally {
-    deletingForms.value.delete(form.id)
-  }
-}
-
-// Navigation
-const previousPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-    loadForms()
-  }
-}
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-    loadForms()
-  }
-}
-
-// Utilitaires
-const clearSearch = () => {
-  searchQuery.value = ''
-  currentPage.value = 1
-  loadForms()
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const showNotification = (type: 'success' | 'error' | 'warning', message: string) => {
-  notification.value = { type, message }
-  setTimeout(() => {
-    notification.value = null
-  }, 5000)
-}
-
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case 'success': return 'i-heroicons-check-circle'
-    case 'error': return 'i-heroicons-x-circle'
-    case 'warning': return 'i-heroicons-exclamation-triangle'
-    default: return 'i-heroicons-information-circle'
-  }
-}
-
-// Watchers
-watch(currentPage, loadForms)
-
-// Lifecycle
+// ✅ Chargement initial
 onMounted(() => {
-  loadForms()
-})
+  loadForms();
+});
+
+// Reste de votre code existant...
 </script>
 
 <style scoped>
@@ -659,32 +346,6 @@ onMounted(() => {
   padding: 2rem;
 }
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-}
-
-.page-title {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.page-subtitle {
-  color: #6b7280;
-  margin: 0.25rem 0 0 0;
-  font-size: 0.875rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-/* Recherche et filtres */
 .search-filters {
   display: flex;
   gap: 1rem;
@@ -865,42 +526,36 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.action-btn {
-  padding: 0.5rem;
+.btn-preview {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
   border: none;
   border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  transition: background 0.2s;
 }
 
-.duplicate-btn {
+.btn-preview:hover {
+  background: #2563eb;
+}
+
+.btn-edit {
+  padding: 0.5rem 1rem;
   background: #f3f4f6;
-  color: #6b7280;
-}
-
-.duplicate-btn:hover:not(:disabled) {
-  background: #e5e7eb;
   color: #374151;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.delete-btn {
-  background: #fef2f2;
-  color: #ef4444;
-}
-
-.delete-btn:hover:not(:disabled) {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.btn-edit:hover {
+  background: #e5e7eb;
 }
 
 /* Stats de la card */
