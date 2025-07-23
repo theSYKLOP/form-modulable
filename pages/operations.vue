@@ -89,66 +89,112 @@
             v-for="form in paginatedForms"
             :key="form.id"
             @click="selectForm(form)"
-            class="form-card"
-            :class="{ 'favorited': favorites.includes(form.id) }"
+            class="group bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
+            :class="{ 'ring-2 ring-yellow-400 ring-opacity-30': favorites.includes(form.id) }"
           >
-            <!-- Badge de statut -->
-            <div v-if="form.isNew" class="status-badge new">
-              Nouveau
-            </div>
-            <div v-else-if="form.isUpdated" class="status-badge updated">
-              Mis à jour
-            </div>
-
-            <!-- En-tête de la carte -->
-            <div class="card-header">
-              <div class="form-icon">
-                <Icon :name="form.icon || 'heroicons:document-text'" class="w-6 h-6" />
+            <!-- Header avec badge de statut -->
+            <div class="relative p-6 pb-4">
+              <!-- Badge de statut -->
+              <div class="flex justify-between items-start mb-4">
+                <span v-if="form.isNew" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1 animate-pulse"></div>
+                  Nouveau
+                </span>
+                <span v-else-if="form.isUpdated" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  <div class="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1"></div>
+                  Mis à jour
+                </span>
+                <div v-else></div>
+                
+                <!-- Bouton favoris -->
+                <button
+                  @click.stop="toggleFavorite(form.id)"
+                  class="p-2 rounded-lg transition-colors"
+                  :class="favorites.includes(form.id) 
+                    ? 'text-yellow-500 hover:bg-yellow-50' 
+                    : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-50'"
+                >
+                  <Icon name="heroicons:heart" class="w-5 h-5" :class="{ 'fill-current': favorites.includes(form.id) }" />
+                </button>
               </div>
-              <button
-                @click.stop="toggleFavorite(form.id)"
-                class="favorite-btn"
-                :class="{ active: favorites.includes(form.id) }"
-              >
-                <Icon name="heroicons:heart" class="w-4 h-4" />
-              </button>
+
+              <!-- Icône et titre -->
+              <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                  <Icon :name="form.icon || 'heroicons:document-text'" class="w-6 h-6 text-blue-600" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                    {{ form.title }}
+                  </h3>
+                  <p class="text-sm text-gray-500 mt-1 line-clamp-2">
+                    {{ form.description || 'Aucune description' }}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <!-- Contenu de la carte -->
-            <div class="card-content">
-              <h3 class="form-title">{{ form.title }}</h3>
-              <p class="form-description">{{ form.description }}</p>
-              
-              <div class="form-meta">
-                <div class="meta-item">
+            <!-- Stats du formulaire -->
+            <div class="px-6 pb-4">
+              <div class="flex justify-between text-sm text-gray-500">
+                <span class="flex items-center gap-1">
                   <Icon name="heroicons:clock" class="w-4 h-4" />
-                  <span>~{{ form.estimatedTime || 5 }} min</span>
-                </div>
-                <div v-if="form.category" class="meta-item">
+                  ~{{ form.estimatedTime || 5 }} min
+                </span>
+                <span v-if="form.stepsCount && form.stepsCount > 1" class="flex items-center gap-1">
+                  <Icon name="heroicons:queue-list" class="w-4 h-4" />
+                  {{ form.stepsCount }} étapes
+                </span>
+                <span v-if="form.template?.category || form.category" class="flex items-center gap-1">
                   <Icon name="heroicons:tag" class="w-4 h-4" />
-                  <span>{{ form.category }}</span>
+                  {{ form.template?.category || form.category }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Indicateur de progression si brouillon existant -->
+            <div v-if="authStore.isAuthenticated && getDraftCount(form.id) > 0" class="px-6 pb-4">
+              <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-orange-700">
+                    <Icon name="heroicons:clock" class="w-4 h-4 inline mr-1" />
+                    En cours ({{ getDraftCount(form.id) }} brouillon{{ getDraftCount(form.id) > 1 ? 's' : '' }})
+                  </span>
+                  <span class="text-xs text-orange-600">Non terminé</span>
                 </div>
-                <div v-if="form.steps.length > 1" class="meta-item">
-                  <Icon name="heroicons:bars-3" class="w-4 h-4" />
-                  <span>{{ form.steps.length }} étapes</span>
+                <div class="mt-2 bg-orange-200 rounded-full h-1.5">
+                  <div class="bg-orange-500 h-1.5 rounded-full" style="width: 65%"></div>
                 </div>
               </div>
             </div>
 
-            <!-- Actions de la carte -->
-            <div class="card-actions">
-              <button class="action-btn primary">
-                <Icon name="heroicons:play" class="w-4 h-4" />
-                Commencer
-              </button>
-              <button 
-                v-if="getDraftCount(form.id) > 0"
-                @click.stop="loadDraft(form.id)"
-                class="action-btn secondary"
-              >
-                <Icon name="heroicons:document-duplicate" class="w-4 h-4" />
-                Brouillon ({{ getDraftCount(form.id) }})
-              </button>
+            <!-- Footer avec actions -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+              <div class="flex justify-between items-center">
+                <div class="text-xs text-gray-500">
+                  Créé {{ form.createdAt ? formatDate(form.createdAt) : 'Date inconnue' }}
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="flex items-center gap-2">
+                  <button 
+                    v-if="authStore.isAuthenticated && getDraftCount(form.id) > 0"
+                    @click.stop="loadDraft(form.id)"
+                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-lg transition-colors"
+                  >
+                    <Icon name="heroicons:document-duplicate" class="w-4 h-4 mr-1" />
+                    Continuer
+                  </button>
+                  
+                  <button 
+                    @click.stop="selectForm(form)"
+                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  >
+                    <Icon name="heroicons:play" class="w-4 h-4 mr-1" />
+                    {{ getDraftCount(form.id) > 0 ? 'Recommencer' : 'Commencer' }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -196,7 +242,7 @@
           </button>
           
           <div class="form-info">
-            <span class="form-category">{{ selectedForm.category }}</span>
+            <span class="form-category">{{ selectedForm.template?.category || selectedForm.category || 'Formulaire' }}</span>
             <h2 class="current-form-title">{{ selectedForm.title }}</h2>
           </div>
         </div>
@@ -246,6 +292,11 @@ interface FormWithOperationData extends FormConfig {
   createdAt?: string
   updatedAt?: string
   draftData?: any
+  stepsCount?: number
+  fieldsCount?: number
+  submissionsCount?: number
+  user?: any
+  template?: any
 }
 
 // Meta de la page
@@ -268,6 +319,9 @@ const selectedForm = ref<FormWithOperationData | null>(null)
 const favorites = ref<string[]>([])
 const drafts = ref<Record<string, number>>({})
 
+// Store d'authentification
+const authStore = useAuthStore()
+
 // Filtres et recherche
 const searchQuery = ref('')
 const categoryFilter = ref('')
@@ -285,7 +339,7 @@ const toast = ref({
 // Computed
 const categories = computed(() => {
   const cats = forms.value
-    .map(form => form.category)
+    .map(form => form.template?.category || form.category)
     .filter((cat): cat is string => Boolean(cat))
     .filter((cat, index, arr) => arr.indexOf(cat) === index)
   return cats.sort()
@@ -300,13 +354,14 @@ const filteredForms = computed(() => {
     filtered = filtered.filter(form =>
       form.title.toLowerCase().includes(query) ||
       (form.description && form.description.toLowerCase().includes(query)) ||
+      (form.template?.category && form.template.category.toLowerCase().includes(query)) ||
       (form.category && form.category.toLowerCase().includes(query))
     )
   }
 
   // Filtre par catégorie
   if (categoryFilter.value) {
-    filtered = filtered.filter(form => form.category === categoryFilter.value)
+    filtered = filtered.filter(form => (form.template?.category || form.category) === categoryFilter.value)
   }
 
   // Filtre par favoris
@@ -353,17 +408,25 @@ const loadForms = async () => {
   loading.value = true
   
   try {
+    console.log('🔄 Chargement des formulaires publics...')
+    
     const response = await fetch('/api/form?isPublished=true')
     const data = await response.json()
     
-    if (data.success) {
-      forms.value = data.data.map((form: any) => ({
+    if (data.success && data.data?.forms) {
+      forms.value = data.data.forms.map((form: any) => ({
         ...form,
         isNew: isFormNew(form.createdAt),
         isUpdated: isFormUpdated(form.updatedAt, form.createdAt)
       } as FormWithOperationData))
+      
+      console.log('✅ Formulaires chargés:', forms.value.length)
+    } else {
+      console.error('❌ Réponse API invalide:', data)
+      showToast('error', 'Format de réponse inattendu')
     }
   } catch (error: any) {
+    console.error('❌ Erreur chargement formulaires:', error)
     showToast('error', 'Erreur lors du chargement des formulaires')
   } finally {
     loading.value = false
@@ -374,8 +437,49 @@ const refreshForms = () => {
   loadForms()
 }
 
-const selectForm = (form: FormWithOperationData) => {
-  selectedForm.value = form
+const selectForm = async (form: FormWithOperationData) => {
+  console.log('📋 Sélection du formulaire:', form.id)
+  
+  try {
+    // Charger les données complètes du formulaire avec steps et fields
+    const response = await fetch(`/api/form/${form.id}`)
+    const data = await response.json()
+    
+    if (data.success && data.data) {
+      // Utiliser les données complètes du formulaire
+      selectedForm.value = {
+        ...form,
+        ...data.data
+      } as FormWithOperationData
+      console.log('✅ Données complètes du formulaire chargées:', selectedForm.value)
+    } else {
+      // Fallback avec données de base si l'API échoue
+      selectedForm.value = {
+        ...form,
+        steps: [{
+          id: 'step-1',
+          title: form.title,
+          description: form.description || '',
+          order: 1,
+          fields: []
+        }]
+      } as FormWithOperationData
+      console.warn('⚠️ Utilisation des données de base du formulaire')
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors du chargement du formulaire:', error)
+    // Fallback en cas d'erreur
+    selectedForm.value = {
+      ...form,
+      steps: [{
+        id: 'step-1',
+        title: form.title,
+        description: form.description || '',
+        order: 1,
+        fields: []
+      }]
+    } as FormWithOperationData
+  }
 }
 
 const goBackToSelection = () => {
@@ -412,13 +516,18 @@ const toggleFavorites = () => {
 const loadDrafts = async () => {
   try {
     // Vérifier d'abord si l'utilisateur est connecté
-    const authStore = useAuthStore()
-    if (!authStore.isAuthenticated) {
+    if (!authStore.isAuthenticated || !authStore.token) {
+      console.log('🔒 Utilisateur non connecté - pas de brouillons à charger')
       return // Pas d'authentification, pas de brouillons
     }
 
+    console.log('🔄 Tentative de chargement des brouillons...')
+    
     const response = await fetch('/api/form-drafts', {
-      credentials: 'include' // Important pour envoyer les cookies
+      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
     })
     
     if (response.ok) {
@@ -428,11 +537,22 @@ const loadDrafts = async () => {
           acc[draft.formId] = (acc[draft.formId] || 0) + 1
           return acc
         }, {})
+        console.log('✅ Brouillons chargés:', drafts.value)
+      } else {
+        console.warn('⚠️ Réponse API inattendue pour les brouillons:', data)
       }
+    } else if (response.status === 401) {
+      console.log('🔒 Token invalide ou expiré - pas de brouillons')
+      // Ne pas traiter comme une erreur
+    } else if (response.status === 404) {
+      console.log('🔍 API form-drafts non trouvée - brouillons désactivés')
+      // Ne pas traiter comme une erreur
+    } else {
+      console.warn(`⚠️ Erreur ${response.status} lors du chargement des brouillons`)
     }
   } catch (error) {
     // Ignorer les erreurs de chargement des brouillons
-    console.warn('Impossible de charger les brouillons:', error)
+    console.warn('⚠️ Impossible de charger les brouillons:', error)
   }
 }
 
@@ -442,8 +562,17 @@ const getDraftCount = (formId: string): number => {
 
 const loadDraft = async (formId: string) => {
   try {
+    // Vérifier l'authentification avant d'essayer de charger
+    if (!authStore.isAuthenticated || !authStore.token) {
+      showToast('error', 'Vous devez être connecté pour accéder aux brouillons')
+      return
+    }
+
     const response = await fetch(`/api/form-drafts/${formId}`, {
-      credentials: 'include'
+      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
     })
     
     if (response.ok) {
@@ -451,17 +580,23 @@ const loadDraft = async (formId: string) => {
       if (data.success) {
         const form = forms.value.find(f => f.id === formId)
         if (form) {
-          // Charger le formulaire avec les données du brouillon
-          selectedForm.value = { 
-            ...form, 
-            draftData: data.data 
-          } as FormWithOperationData
+          // Charger d'abord les données complètes du formulaire
+          await selectForm(form)
+          
+          // Puis ajouter les données du brouillon
+          if (selectedForm.value) {
+            selectedForm.value.draftData = data.data
+            console.log('✅ Brouillon chargé pour le formulaire:', formId)
+          }
         }
       }
+    } else if (response.status === 401) {
+      showToast('error', 'Session expirée - veuillez vous reconnecter')
     } else {
       showToast('error', 'Erreur lors du chargement du brouillon')
     }
   } catch (error: any) {
+    console.error('❌ Erreur loadDraft:', error)
     showToast('error', 'Erreur lors du chargement du brouillon')
   }
 }
@@ -518,6 +653,23 @@ const isFormUpdated = (updatedAt: string, createdAt: string): boolean => {
   return diffInHours > 1 // Considéré comme mis à jour si modifié plus d'1h après création
 }
 
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInDays = (now.getTime() - date.getTime()) / (1000 * 3600 * 24)
+  
+  if (diffInDays < 1) {
+    return 'aujourd\'hui'
+  } else if (diffInDays < 7) {
+    return `il y a ${Math.floor(diffInDays)} jour${Math.floor(diffInDays) > 1 ? 's' : ''}`
+  } else {
+    return date.toLocaleDateString('fr-FR', { 
+      day: 'numeric', 
+      month: 'short' 
+    })
+  }
+}
+
 // Toast
 const showToast = (type: 'success' | 'error', message: string) => {
   toast.value = { show: true, type, message }
@@ -541,305 +693,456 @@ watch([searchQuery, categoryFilter, showFavoritesOnly], () => {
 })
 
 // Lifecycle
-onMounted(() => {
-  loadForms()
+onMounted(async () => {
+  // Charger d'abord les formulaires
+  await loadForms()
+  
+  // Charger les favoris depuis localStorage
   loadFavorites()
-  loadDrafts()
+  
+  // Charger les brouillons seulement si connecté
+  console.log('🔍 État authentification:', authStore.isAuthenticated, authStore.token)
+  if (authStore.isAuthenticated && authStore.token) {
+    console.log('✅ Utilisateur connecté - chargement des brouillons')
+    loadDrafts()
+  } else {
+    console.log('❌ Utilisateur non connecté - pas de chargement des brouillons')
+  }
 })
 </script>
 
 <style scoped>
 .operations-page {
-  @apply min-h-screen bg-gray-50;
+  min-height: 100vh;
+  background-color: #f9fafb;
 }
 
 /* En-tête de la page */
 .page-header {
-  @apply bg-white border-b border-gray-200 px-4 py-6;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.5rem 1rem;
 }
 
 .header-content {
-  @apply max-w-7xl mx-auto flex justify-between items-center;
+  max-width: 80rem;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .page-title {
-  @apply text-2xl font-bold text-gray-900;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
 }
 
 .page-description {
-  @apply text-gray-600 mt-1;
+  color: #4b5563;
+  margin-top: 0.25rem;
 }
 
 .refresh-btn {
-  @apply inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.refresh-btn:hover {
+  background-color: #1d4ed8;
 }
 
 /* Contenu principal */
 .main-content {
-  @apply max-w-7xl mx-auto px-4 py-8;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
 
 /* Section de recherche */
 .search-section {
-  @apply mb-8 space-y-4;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .search-bar {
-  @apply relative;
+  position: relative;
 }
 
 .search-icon {
-  @apply absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400;
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
 }
 
 .search-input {
-  @apply w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+}
+
+.search-input:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: #3b82f6;
 }
 
 .filters {
-  @apply flex gap-4 flex-wrap;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .filter-select {
-  @apply px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+}
+
+.filter-select:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: #3b82f6;
 }
 
 .filter-btn {
-  @apply inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: white;
+  transition: background-color 0.2s;
+}
+
+.filter-btn:hover {
+  background-color: #f9fafb;
 }
 
 .filter-btn.active {
-  @apply bg-blue-50 border-blue-300 text-blue-700;
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+/* Classes utilitaires */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Grille des formulaires */
 .forms-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
+/* Loading grid pour les squelettes */
 .loading-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
-}
-
-/* Cartes de formulaire */
-.form-card {
-  @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-blue-300 relative;
-}
-
-.form-card.favorited {
-  @apply ring-2 ring-yellow-200;
-}
-
-.status-badge {
-  @apply absolute top-3 right-3 px-2 py-1 text-xs font-medium rounded-full;
-}
-
-.status-badge.new {
-  @apply bg-green-100 text-green-700;
-}
-
-.status-badge.updated {
-  @apply bg-blue-100 text-blue-700;
-}
-
-.card-header {
-  @apply flex justify-between items-start mb-4;
-}
-
-.form-icon {
-  @apply w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600;
-}
-
-.favorite-btn {
-  @apply p-2 rounded-lg text-gray-400 hover:text-yellow-500 hover:bg-gray-50 transition-colors;
-}
-
-.favorite-btn.active {
-  @apply text-yellow-500;
-}
-
-.card-content {
-  @apply mb-6;
-}
-
-.form-title {
-  @apply text-lg font-semibold text-gray-900 mb-2;
-}
-
-.form-description {
-  @apply text-gray-600 text-sm mb-4 line-clamp-3;
-}
-
-.form-meta {
-  @apply space-y-2;
-}
-
-.meta-item {
-  @apply flex items-center gap-2 text-sm text-gray-500;
-}
-
-.card-actions {
-  @apply flex gap-2;
-}
-
-.action-btn {
-  @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
-}
-
-.action-btn.primary {
-  @apply bg-blue-600 text-white hover:bg-blue-700;
-}
-
-.action-btn.secondary {
-  @apply border border-gray-300 text-gray-700 hover:bg-gray-50;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
 /* Squelettes de chargement */
 .form-card-skeleton {
-  @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse;
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .skeleton-header {
-  @apply w-12 h-12 bg-gray-200 rounded-lg mb-4;
+  width: 3rem;
+  height: 3rem;
+  background-color: #e5e7eb;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .skeleton-content {
-  @apply space-y-3 mb-6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
 .skeleton-line {
-  @apply h-4 bg-gray-200 rounded;
+  height: 1rem;
+  background-color: #e5e7eb;
+  border-radius: 0.25rem;
 }
 
 .skeleton-line.short {
-  @apply w-2/3;
+  width: 66.666667%;
 }
 
 .skeleton-footer {
-  @apply h-8 bg-gray-200 rounded;
+  height: 2rem;
+  background-color: #e5e7eb;
+  border-radius: 0.25rem;
 }
 
 /* État vide */
 .empty-state {
-  @apply col-span-full flex flex-col items-center justify-center py-16 text-center;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+  text-align: center;
 }
 
 .empty-icon {
-  @apply w-16 h-16 text-gray-400 mb-4;
+  width: 4rem;
+  height: 4rem;
+  color: #9ca3af;
+  margin-bottom: 1rem;
 }
 
 .empty-title {
-  @apply text-xl font-medium text-gray-900 mb-2;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.5rem;
 }
 
 .empty-description {
-  @apply text-gray-600 mb-6 max-w-md;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+  max-width: 28rem;
 }
 
 .clear-filters-btn {
-  @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clear-filters-btn:hover {
+  background-color: #1d4ed8;
 }
 
 /* Pagination */
 .pagination {
-  @apply flex items-center justify-center gap-2 mt-8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
 }
 
 .pagination-btn {
-  @apply inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .page-numbers {
-  @apply flex gap-1;
+  display: flex;
+  gap: 0.25rem;
 }
 
 .page-btn {
-  @apply w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover {
+  background-color: #f9fafb;
 }
 
 .page-btn.active {
-  @apply bg-blue-600 text-white border-blue-600;
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
 }
 
 /* Navigation du formulaire */
 .form-navigation {
-  @apply flex items-center gap-4 mb-8 pb-4 border-b border-gray-200;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .back-btn {
-  @apply inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: #4b5563;
+  background-color: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  color: #111827;
+  background-color: #f3f4f6;
 }
 
 .form-info {
-  @apply flex-1;
+  flex: 1;
 }
 
 .form-category {
-  @apply text-sm text-blue-600 font-medium;
+  font-size: 0.875rem;
+  color: #2563eb;
+  font-weight: 500;
 }
 
 .current-form-title {
-  @apply text-xl font-semibold text-gray-900;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
 }
 
 .form-renderer-container {
-  @apply max-w-none;
+  max-width: none;
 }
 
 /* Toast notifications */
 .toast {
-  @apply fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg max-w-md;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  max-width: 28rem;
 }
 
 .toast.success {
-  @apply bg-green-50 text-green-700 border border-green-200;
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 .toast.error {
-  @apply bg-red-50 text-red-700 border border-red-200;
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .toast-close {
-  @apply p-1 rounded-lg hover:bg-black hover:bg-opacity-10 transition-colors;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.toast-close:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Transitions */
 .toast-enter-active, .toast-leave-active {
-  @apply transition-all duration-300;
+  transition: all 0.3s;
 }
 
 .toast-enter-from {
-  @apply opacity-0 transform translate-x-full;
+  opacity: 0;
+  transform: translateX(100%);
 }
 
 .toast-leave-to {
-  @apply opacity-0 transform translate-x-full;
+  opacity: 0;
+  transform: translateX(100%);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .header-content {
-    @apply flex-col gap-4 items-start;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
   }
   
   .search-section {
-    @apply space-y-3;
+    gap: 0.75rem;
   }
   
   .filters {
-    @apply flex-col gap-2;
+    flex-direction: column;
+    gap: 0.5rem;
   }
   
   .forms-grid {
-    @apply grid-cols-1;
+    grid-template-columns: 1fr;
   }
   
   .form-navigation {
-    @apply flex-col gap-2 items-start;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
   }
   
   .pagination {
-    @apply flex-wrap;
+    flex-wrap: wrap;
   }
 }
 </style>
