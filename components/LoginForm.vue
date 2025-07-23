@@ -248,15 +248,24 @@ const handleLogin = async () => {
     })
 
     if (result.success) {
-      // ✅ Gestion de la redirection avec paramètre redirect
+      // ✅ Gestion de la redirection selon le rôle utilisateur
       const route = useRoute()
       const redirectTo = route.query.redirect
       
+      // ✅ Si il y a un paramètre redirect spécifique, l'utiliser
       if (redirectTo && redirectTo !== '/auth') {
         await navigateTo(redirectTo, { replace: true })
       } else {
-        // ✅ Redirection par défaut vers /admin (votre dashboard principal)
-        await navigateTo('/admin', { replace: true })
+        // ✅ Redirection selon le rôle de l'utilisateur
+        const userRole = result.data?.user?.role || authStore.user?.role
+        
+        if (userRole === 'ADMIN') {
+          // ✅ Admin → Dashboard d'administration
+          await navigateTo('/admin', { replace: true })
+        } else {
+          // ✅ Utilisateur normal → Page d'accueil
+          await navigateTo('/', { replace: true })
+        }
       }
     } else {
       error.value = result.error || 'Erreur de connexion'

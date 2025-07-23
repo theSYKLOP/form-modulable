@@ -1,10 +1,31 @@
 export default defineNuxtRouteMiddleware((to) => {
   // ✅ Éviter les boucles de redirection
-  if (to.path === '/auth-loading' || to.path.startsWith('/auth') || to.path === '/') {
+  if (to.path === '/auth-loading') {
     return
   }
   
   const authStore = useAuthStore()
+  
+  // ✅ Si l'utilisateur est connecté et essaie d'accéder aux pages d'auth
+  if (authStore.isAuthenticated && to.path.startsWith('/auth')) {
+    // ✅ Gérer la redirection après connexion si spécifiée
+    const redirectTo = to.query.redirect as string
+    if (redirectTo && redirectTo !== '/auth' && redirectTo !== to.path) {
+      return navigateTo(redirectTo, { replace: true })
+    }
+    
+    // ✅ Redirection selon le rôle
+    if (authStore.user?.role === 'ADMIN') {
+      return navigateTo('/admin', { replace: true })
+    } else {
+      return navigateTo('/', { replace: true })
+    }
+  }
+  
+  // ✅ Pages publiques qui ne nécessitent pas d'authentification (page d'accueil exclue de la vérification ci-dessus)
+  if (to.path === '/') {
+    return
+  }
   
   // ✅ Vérification instantanée pour les routes admin
   if (to.path.startsWith('/admin')) {

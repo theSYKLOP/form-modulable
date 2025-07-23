@@ -310,7 +310,7 @@ const isVisible = computed(() => {
 }
 
 .field-renderer.half {
-  width: calc(50% - 0.5rem);
+  width: 100%;
   display: inline-block;
   vertical-align: top;
   margin-right: 1rem;
@@ -321,7 +321,7 @@ const isVisible = computed(() => {
 }
 
 .field-renderer.third {
-  width: calc(33.333% - 0.67rem);
+  width: 100%;
   display: inline-block;
   vertical-align: top;
   margin-right: 1rem;
@@ -332,7 +332,7 @@ const isVisible = computed(() => {
 }
 
 .field-renderer.quarter {
-  width: calc(25% - 0.75rem);
+  width: 100%;
   display: inline-block;
   vertical-align: top;
   margin-right: 1rem;

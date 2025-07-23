@@ -75,6 +75,7 @@ export interface FormConfig {
   id: string
   title: string
   description?: string
+  icon?: string // Icône du formulaire
   steps: FormStep[]
   layout: 'VERTICAL' | 'HORIZONTAL'
   spacing: 'COMPACT' | 'NORMAL' | 'RELAXED'
@@ -142,6 +143,7 @@ export interface Form {
   id: string
   title: string
   description?: string | null
+  icon?: string | null // Icône du formulaire
   mode: 'EDIT' | 'VIEW'
   submitButtonText?: string | null
   cancelButtonText?: string | null

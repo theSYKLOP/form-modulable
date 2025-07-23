@@ -1,91 +1,217 @@
 <template>
   <div class="forms-management">
-    <!-- Header optimisé -->
-    <div class="page-header">
-      <div class="search-filters">
-        <div class="search-box">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900">Gestion des formulaires</h1>
+          <p class="text-gray-600 mt-1">Gérer tous les formulaires de la plateforme</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- Bouton de rafraîchissement -->
+          <button 
+            @click="refreshForms" 
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            :disabled="loading"
+            :class="{ 'opacity-50 cursor-not-allowed': loading }"
+            title="Actualiser la liste"
+          >
+            <Icon 
+              name="heroicons:arrow-path" 
+              class="w-4 h-4 transition-transform" 
+              :class="{ 'animate-spin': loading }"
+            />
+            <span class="hidden sm:inline" v-if="!loading">Actualiser</span>
+            <span class="hidden sm:inline" v-else>Chargement...</span>
+          </button>
+          
+          <!-- Bouton principal -->
+          <NuxtLink to="/form" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium shadow-sm transition-colors">
+            <Icon name="heroicons:plus" class="w-5 h-5" />
+            Nouveau formulaire
+          </NuxtLink>
+        </div>
+      </div>
+      
+      <!-- Indicateur de dernière mise à jour -->
+      <div class="mt-4 text-sm text-gray-500 flex items-center justify-between">
+        <span class="flex items-center gap-2">
+          <Icon name="heroicons:clock" class="w-4 h-4" />
+          Dernière mise à jour : 
+          <span class="font-medium" :class="isDataFresh ? 'text-green-600' : 'text-orange-600'">
+            {{ formatRelativeTime(lastRefresh) }}
+          </span>
+          <span v-if="isDataFresh" class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+            <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1 animate-pulse"></div>
+            À jour
+          </span>
+        </span>
+        <span v-if="forms.length > 0">
+          {{ forms.length }} formulaire{{ forms.length > 1 ? 's' : '' }} trouvé{{ forms.length > 1 ? 's' : '' }}
+        </span>
+      </div>
+      
+      <!-- Barre de recherche et filtres -->
+      <div class="mt-6 flex flex-col sm:flex-row gap-4">
+        <!-- Recherche -->
+        <div class="relative flex-1 max-w-md">
+          <Icon name="heroicons:magnifying-glass" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input 
             v-model="searchQuery"
             @input="debouncedSearch"
             type="text"
             placeholder="Rechercher un formulaire..."
-            class="search-input"
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
+        </div>
+        
+        <!-- Filtre par statut -->
+        <div class="flex gap-2">
+          <button
+            @click="setStatusFilter('all')"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            :class="statusFilter === 'all' 
+              ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+              : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'"
+          >
+            Tous ({{ forms.length }})
+          </button>
+          <button
+            @click="setStatusFilter('published')"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            :class="statusFilter === 'published' 
+              ? 'bg-green-100 text-green-700 border border-green-200' 
+              : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'"
+          >
+            Publiés ({{ publishedCount }})
+          </button>
+          <button
+            @click="setStatusFilter('draft')"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            :class="statusFilter === 'draft' 
+              ? 'bg-orange-100 text-orange-700 border border-orange-200' 
+              : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'"
+          >
+            Brouillons ({{ draftCount }})
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Liste des formulaires avec lazy loading et virtualisation -->
-    <div class="forms-container">
+    <!-- Contenu principal -->
+    <div class="p-6">
       <!-- État de chargement -->
-      <div v-if="loading" class="loading-state">
-        <div class="loading-spinner animate-spin">⏳</div>
-        <p>Chargement des formulaires...</p>
+      <div v-if="loading" class="flex items-center justify-center py-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span class="ml-3 text-gray-600">Chargement des formulaires...</span>
       </div>
       
       <!-- État vide -->
-      <div v-else-if="forms.length === 0" class="empty-state">
-        <div class="empty-icon">📝</div>
-        <h3>Aucun formulaire trouvé</h3>
-        <p>{{ searchQuery ? 'Aucun résultat pour cette recherche.' : 'Commencez par créer votre premier formulaire.' }}</p>
-        <NuxtLink to="/form" class="btn-primary">
-          <Icon name="heroicons:plus" />
-          Créer un formulaire
-        </NuxtLink>
+      <div v-else-if="forms.length === 0" class="text-center py-12">
+        <Icon name="heroicons:document-text" class="mx-auto h-12 w-12 text-gray-400" />
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun formulaire</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          {{ searchQuery ? 'Aucun résultat pour cette recherche.' : 'Commencez par créer votre premier formulaire.' }}
+        </p>
+        <div class="mt-6">
+          <NuxtLink to="/form" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+            <Icon name="heroicons:plus" class="-ml-1 mr-2 h-5 w-5" />
+            Nouveau formulaire
+          </NuxtLink>
+        </div>
       </div>
       
       <!-- Grille des formulaires -->
-      <div v-else class="forms-grid" ref="formsGrid">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div 
-          v-for="form in visibleForms" 
+          v-for="form in forms" 
           :key="form.id"
-          class="form-card"
-          @mouseenter="preloadFormEdit(form.id)"
+          class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all duration-200 group"
         >
           <!-- En-tête de la card -->
-          <div class="card-header">
-            <div class="form-info">
-              <h3 class="form-title">{{ form.title || 'Formulaire sans titre' }}</h3>
-              <p class="form-description">{{ form.description || 'Aucune description' }}</p>
+          <div class="flex items-start gap-3 mb-4">
+            <div class="form-icon-container">
+              <Icon :name="form.icon || 'heroicons:document-text'" class="form-icon" />
             </div>
-            <div class="card-actions">
-              <button @click="previewForm(form)" class="btn-preview">
-                <Icon name="heroicons:eye" />
-                Aperçu
-              </button>
-              <button @click="editForm(form)" class="btn-edit">
-                <Icon name="heroicons:pencil" />
-                Modifier
-              </button>
-            </div>
-          </div>
-          
-          <!-- Stats de la card -->
-          <div class="card-stats">
-            <div class="stat-item">
-              <Icon name="heroicons:queue-list" />
-              <span>{{ form.steps?.length || 0 }} étapes</span>
-            </div>
-            <div class="stat-item">
-              <Icon name="heroicons:users" />
-              <span>{{ form.submissionsCount || 0 }} soumissions</span>
-            </div>
-            <div class="stat-item">
-              <Icon name="heroicons:eye" />
-              <span>{{ form.viewsCount || 0 }} vues</span>
-            </div>
-          </div>
-          
-          <!-- Footer de la card -->
-          <div class="card-footer">
-            <div class="form-dates">
-              <div class="date-created">
-                <Icon name="heroicons:calendar" />
-                <span>Créé {{ formatDate(form.createdAt) }}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="text-lg font-medium text-gray-900 truncate">
+                  {{ form.title || 'Formulaire sans titre' }}
+                </h3>
+                <!-- Badge de statut de publication -->
+                <span 
+                  v-if="form.isPublished" 
+                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                >
+                  <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></div>
+                  Publié
+                </span>
+                <span 
+                  v-else 
+                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                >
+                  <div class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1"></div>
+                  Brouillon
+                </span>
               </div>
-              <div class="date-updated">
-                <Icon name="heroicons:clock" />
-                <span>Modifié {{ formatDate(form.updatedAt) }}</span>
+              <p class="text-sm text-gray-500 mt-1 line-clamp-2">
+                {{ form.description || 'Aucune description' }}
+              </p>
+            </div>
+          </div>
+          
+          <!-- Stats -->
+          <div class="flex justify-between text-sm text-gray-500 mb-4">
+            <span class="flex items-center gap-1">
+              <Icon name="heroicons:queue-list" class="w-4 h-4" />
+              {{ form.stepsCount || 0 }} étapes
+            </span>
+            <span class="flex items-center gap-1">
+              <Icon name="heroicons:users" class="w-4 h-4" />
+              {{ form.submissionsCount || 0 }} soumissions
+            </span>
+          </div>
+          
+          <!-- Footer avec actions -->
+          <div class="pt-4 border-t border-gray-100">
+            <div class="flex justify-between items-center">
+              <div class="text-xs text-gray-500">
+                <div>Créé {{ formatDate(form.createdAt) }}</div>
+                <div class="mt-1">Modifié {{ formatDate(form.updatedAt) }}</div>
+              </div>
+              
+              <!-- Boutons d'action -->
+              <div class="flex items-center gap-1 opacity-75 group-hover:opacity-100 transition-opacity">
+                <!-- Toggle de publication -->
+                <button 
+                  @click="togglePublished(form)"
+                  :disabled="updatingForms.has(form.id)"
+                  class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  :title="form.isPublished ? 'Dépublier' : 'Publier'"
+                >
+                  <div v-if="updatingForms.has(form.id)" class="w-4 h-4">
+                    <Icon name="heroicons:arrow-path" class="w-4 h-4 animate-spin" />
+                  </div>
+                  <Icon 
+                    v-else
+                    :name="form.isPublished ? 'heroicons:archive-box' : 'heroicons:globe-alt'" 
+                    class="w-4 h-4" 
+                  />
+                </button>
+                <button 
+                  @click="previewForm(form)"
+                  class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  title="Aperçu"
+                >
+                  <Icon name="heroicons:eye" class="w-4 h-4" />
+                </button>
+                <button 
+                  @click="editForm(form)"
+                  class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                  title="Modifier"
+                >
+                  <Icon name="heroicons:pencil" class="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -93,60 +219,67 @@
       </div>
     </div>
 
-    <!-- Modal de prévisualisation optimisée -->
-    <div v-if="showPreviewModal" class="modal-overlay preview-overlay" @click.self="closePreviewModal">
-      <div class="preview-modal">
-        <!-- Header de la modal -->
-        <div class="preview-modal-header">
-          <div class="preview-header-info">
-            <div class="preview-form-title">
-              <Icon name="heroicons:eye" class="preview-icon" />
-              <span>Aperçu du formulaire</span>
-            </div>
-            <p class="preview-form-name">{{ previewingForm?.title || 'Formulaire sans titre' }}</p>
+    <!-- Modal de prévisualisation -->
+    <div v-if="showPreviewModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <!-- Header modal -->
+        <div class="flex justify-between items-center p-6 border-b">
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Aperçu du formulaire</h3>
+            <p class="text-sm text-gray-500">{{ previewingForm?.title || 'Formulaire sans titre' }}</p>
           </div>
-          <button @click="closePreviewModal" class="preview-close-btn">
-            <Icon name="heroicons:x-mark" />
+          <button @click="closePreviewModal" class="text-gray-400 hover:text-gray-600">
+            <Icon name="heroicons:x-mark" class="w-6 h-6" />
           </button>
         </div>
         
-        <!-- Corps de la modal -->
-        <div class="preview-modal-body">
-          <div v-if="!previewingForm" class="preview-loading">
-            <div class="loading-spinner animate-spin">⏳</div>
-            <p>Chargement de l'aperçu...</p>
-          </div>
-          
-          <div v-else class="preview-content-wrapper">
-            <LazyFormPreview 
-              v-if="previewingForm"
-              :form-config="formatFormForPreview(previewingForm)"
-            />
+        <!-- Corps modal -->
+        <div class="overflow-y-auto max-h-[70vh]">
+          <div v-if="previewingForm" class="h-full">
+            <!-- En-tête avec informations du formulaire -->
+            <div class="bg-gray-50 p-4 border-b">
+              <div class="flex justify-between items-start">
+                <div class="flex items-start gap-3">
+                  <div class="modal-form-icon-container">
+                    <Icon :name="previewingForm.icon || 'heroicons:document-text'" class="modal-form-icon" />
+                  </div>
+                  <div>
+                    <h4 class="font-medium text-gray-900">{{ previewingForm.title }}</h4>
+                    <p class="text-gray-600 text-sm mt-1">{{ previewingForm.description }}</p>
+                  </div>
+                </div>
+                <div class="flex gap-4 text-sm">
+                  <div class="text-center">
+                    <div class="font-bold text-blue-600">{{ previewingForm.stepsCount || 0 }}</div>
+                    <div class="text-gray-600">Étapes</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="font-bold text-green-600">{{ previewingForm.fieldsCount || 0 }}</div>
+                    <div class="text-gray-600">Champs</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="font-bold text-purple-600">{{ previewingForm.submissionsCount || 0 }}</div>
+                    <div class="text-gray-600">Soumissions</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Composant FormPreview -->
+            <div class="p-6">
+              <FormPreview :form-config="previewingForm" />
+            </div>
           </div>
         </div>
         
-        <!-- Footer de la modal -->
-        <div class="preview-modal-footer">
-          <div class="preview-stats">
-            <div class="stat">
-              <Icon name="heroicons:queue-list" />
-              <span>{{ previewingForm?.steps?.length || 0 }} étapes</span>
-            </div>
-            <div class="stat">
-              <Icon name="heroicons:calendar" />
-              <span>Créé {{ formatDate(previewingForm?.createdAt) }}</span>
-            </div>
-          </div>
-          
-          <div class="preview-actions">
-            <button @click="editForm(previewingForm)" class="btn-primary">
-              <Icon name="heroicons:pencil" />
-              Modifier
-            </button>
-            <button @click="closePreviewModal" class="btn-secondary">
-              Fermer
-            </button>
-          </div>
+        <!-- Footer modal -->
+        <div class="flex justify-end gap-3 p-6 border-t bg-gray-50">
+          <button @click="closePreviewModal" class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+            Fermer
+          </button>
+          <button @click="editForm(previewingForm)" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            Modifier
+          </button>
         </div>
       </div>
     </div>
@@ -154,13 +287,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
-import { usePerformance } from '~/composables/core/usePerformance';
+// ✅ Import du composant FormPreview
+import FormPreview from '~/pages/form/components/FormPreview.vue';
+import { onActivated, onUnmounted } from 'vue';
 
 // ✅ Configuration de la page admin
 definePageMeta({
-  layout: 'admin',
-  middleware: 'auth'
+  layout: 'admin'
 });
 
 // ✅ Configuration SEO
@@ -171,115 +304,223 @@ useHead({
   ]
 });
 
-// ✅ Intégration des optimisations
-const { 
-  lazyComponent, 
-  useOptimizedDebounce, 
-  useIntersectionObserver,
-  preloadRoute,
-  useMemoryCache,
-  measurePerformance
-} = usePerformance();
-
-// ✅ Composant lazy pour la modal de prévisualisation
-const LazyFormPreview = lazyComponent(() => import('~/pages/form/components/FormPreview.vue'));
-
-// ✅ Cache pour les formulaires
-const formsCache = useMemoryCache('admin-forms', 300000); // 5 minutes
-
-// États existants
+// États principaux
 const forms = ref([]);
 const searchQuery = ref('');
-const formsGrid = ref(null);
-
-// ✅ Variables manquantes pour la pagination et le chargement
+const statusFilter = ref('all'); // 'all', 'published', 'draft'
 const loading = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(12);
-const sortBy = ref('createdAt');
-const sortOrder = ref('desc');
+const lastRefresh = ref(new Date());
 
-// ✅ Variables pour la modal de prévisualisation
+// Modal de prévisualisation
 const showPreviewModal = ref(false);
 const previewingForm = ref(null);
 
-// ✅ Recherche avec debounce optimisé
-const debouncedSearch = useOptimizedDebounce(() => {
-  measurePerformance('Forms Search', () => {
-    currentPage.value = 1;
-    loadForms();
-  });
+// États pour la gestion des mises à jour
+const updatingForms = ref(new Set());
+
+// ✅ Recherche avec debounce simple
+const debouncedSearch = useDebounceFn(() => {
+  currentPage.value = 1;
+  loadForms(true); // Force le rechargement lors de la recherche
 }, 300);
 
-// ✅ Pagination virtuelle pour les grandes listes
-const visibleForms = computed(() => {
-  // Afficher seulement les formulaires visibles (pagination virtuelle)
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return forms.value.slice(start, end);
+// ✅ Computed pour les compteurs de statut
+const publishedCount = computed(() => {
+  return forms.value.filter(form => form.isPublished).length
+})
+
+const draftCount = computed(() => {
+  return forms.value.filter(form => !form.isPublished).length
+})
+
+// ✅ Fonction pour changer le filtre de statut
+const setStatusFilter = (filter) => {
+  statusFilter.value = filter
+  currentPage.value = 1
+  loadForms(true)
+}
+
+// ✅ Fonction pour rafraîchir manuellement
+const refreshForms = () => {
+  console.log('🔄 Rafraîchissement manuel demandé');
+  loadForms(true);
+};
+
+// ✅ Computed pour savoir si les données sont fraîches (moins de 1 minute)
+const isDataFresh = computed(() => {
+  if (!lastRefresh.value) return false;
+  const now = new Date();
+  const diff = now.getTime() - lastRefresh.value.getTime();
+  return diff < 60000; // Moins d'1 minute = fraîche
 });
 
-// ✅ Chargement des formulaires avec cache
-const loadForms = async () => {
-  loading.value = true;
-  
-  // Vérifier le cache d'abord
-  const cachedForms = formsCache.get();
-  if (cachedForms && !searchQuery.value) {
-    forms.value = cachedForms;
-    loading.value = false;
+// ✅ Chargement des formulaires simplifié
+const loadForms = async (force = false) => {
+  // Éviter les rechargements trop fréquents (sauf si forcé)
+  if (!force && loading.value) {
+    console.log('⚠️ Chargement déjà en cours, ignoré');
     return;
   }
   
+  loading.value = true;
+  
   try {
-    const response = await measurePerformance('Load Forms API', async () => {
-      return await $fetch('/api/form', {
-        query: {
-          page: currentPage.value,
-          limit: itemsPerPage.value,
-          search: searchQuery.value || undefined,
-          sortBy: sortBy.value,
-          sortOrder: sortOrder.value
-        }
-      });
+    console.log('🔄 Chargement des formulaires...', { force, timestamp: new Date().toLocaleTimeString() });
+    
+    // Construction des paramètres de requête
+    const queryParams = {
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+      search: searchQuery.value || undefined,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      // ✅ Ajouter un timestamp pour éviter le cache
+      _t: Date.now()
+    }
+    
+    // ✅ Ajouter le filtre de statut si nécessaire
+    if (statusFilter.value === 'published') {
+      queryParams.isPublished = 'true'
+    } else if (statusFilter.value === 'draft') {
+      queryParams.isPublished = 'false'
+    }
+    // Si 'all', on ne filtre pas par isPublished
+    
+    const response = await $fetch('/api/form', {
+      query: queryParams
     });
 
     if (response.success) {
-      forms.value = response.data.forms;
+      forms.value = response.data.forms || [];
+      lastRefresh.value = new Date();
       
-      // Mettre en cache seulement si pas de recherche
-      if (!searchQuery.value) {
-        formsCache.set(response.data.forms);
+      console.log('✅ Formulaires chargés:', {
+        count: forms.value.length,
+        filter: statusFilter.value,
+        timestamp: lastRefresh.value.toLocaleTimeString()
+      });
+      
+      // ✅ Debug pour voir la structure des données
+      if (forms.value.length > 0) {
+        console.log('Premier formulaire récupéré:', {
+          title: forms.value[0].title,
+          description: forms.value[0].description,
+          icon: forms.value[0].icon,
+          isPublished: forms.value[0].isPublished,
+          stepsCount: forms.value[0].stepsCount,
+          fieldsCount: forms.value[0].fieldsCount,
+          submissionsCount: forms.value[0].submissionsCount,
+          updatedAt: forms.value[0].updatedAt
+        });
       }
+    } else {
+      console.error('Erreur API:', response.message);
+      forms.value = [];
     }
   } catch (error) {
-    console.error('Erreur:', error);
+    console.error('Erreur de chargement des formulaires:', error);
+    forms.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-// ✅ Préchargement optimisé des routes d'édition
-const preloadFormEdit = useOptimizedDebounce((formId) => {
-  preloadRoute(`/form?id=${formId}`);
-}, 300);
-
-// ✅ Observer pour le chargement automatique
-useIntersectionObserver(
-  formsGrid,
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting && forms.value.length === 0) {
-        loadForms();
+// ✅ Fonctions pour les actions
+const togglePublished = async (form) => {
+  try {
+    updatingForms.value.add(form.id)
+    
+    const newPublishedStatus = !form.isPublished
+    
+    console.log(`🔄 ${newPublishedStatus ? 'Publication' : 'Dépublication'} du formulaire:`, form.title)
+    
+    const response = await $fetch(`/api/form/${form.id}`, {
+      method: 'PUT',
+      body: {
+        isPublished: newPublishedStatus
       }
-    });
-  },
-  { rootMargin: '50px' }
-);
+    })
+    
+    if (response.success) {
+      // Mettre à jour localement le statut
+      const formIndex = forms.value.findIndex(f => f.id === form.id)
+      if (formIndex !== -1) {
+        forms.value[formIndex].isPublished = newPublishedStatus
+        if (newPublishedStatus) {
+          forms.value[formIndex].publishedAt = new Date().toISOString()
+        }
+      }
+      
+      console.log(`✅ Formulaire ${newPublishedStatus ? 'publié' : 'dépublié'} avec succès`)
+      
+      // ✅ Invalider le cache de la page d'accueil pour forcer le rechargement des formulaires publiés
+      try {
+        if (process.client) {
+          // Invalider le cache côté client
+          await clearNuxtData()
+          
+          // Optionnel: Si vous voulez forcer le rechargement de la page d'accueil
+          // await refreshCookie('homepage-forms')
+          console.log('🔄 Cache invalidé - la page d\'accueil se mettra à jour')
+        }
+      } catch (cacheError) {
+        console.warn('⚠️ Erreur lors de l\'invalidation du cache:', cacheError)
+      }
+      
+      // Optionnel: Afficher une notification de succès
+      // showNotification(`Formulaire ${newPublishedStatus ? 'publié' : 'dépublié'} avec succès`, 'success')
+    } else {
+      console.error('Erreur lors de la mise à jour:', response.message)
+      // Optionnel: Afficher une notification d'erreur
+      // showNotification('Erreur lors de la mise à jour du statut', 'error')
+    }
+  } catch (error) {
+    console.error(`Erreur lors du toggle de publication:`, error)
+    // Optionnel: Afficher une notification d'erreur
+    // showNotification('Erreur lors de la mise à jour du statut', 'error')
+  } finally {
+    updatingForms.value.delete(form.id)
+  }
+}
 
-// ✅ Fonctions manquantes pour le template
-const previewForm = (form) => {
-  previewingForm.value = form;
+const previewForm = async (form) => {
+  try {
+    // Récupérer les données complètes du formulaire avec les steps
+    const fullForm = await $fetch(`/api/form/${form.id}`);
+    
+    if (fullForm.success && fullForm.data) {
+      // ✅ Adapter la structure pour être compatible avec le template
+      // L'API /api/form/[id] retourne les stats dans .stats, mais le template attend les stats à la racine
+      const adaptedForm = {
+        ...fullForm.data,
+        // Copier les stats depuis l'objet stats vers la racine pour compatibilité
+        stepsCount: fullForm.data.stats?.stepsCount || 0,
+        fieldsCount: fullForm.data.stats?.fieldsCount || 0,
+        submissionsCount: fullForm.data.stats?.submissionsCount || 0
+      };
+      
+      console.log('Formulaire adapté pour preview:', {
+        title: adaptedForm.title,
+        stepsCount: adaptedForm.stepsCount,
+        fieldsCount: adaptedForm.fieldsCount,
+        submissionsCount: adaptedForm.submissionsCount,
+        hasSteps: Array.isArray(adaptedForm.steps),
+        stepsLength: adaptedForm.steps?.length
+      });
+      
+      previewingForm.value = adaptedForm;
+    } else {
+      // Fallback sur les données existantes
+      previewingForm.value = form;
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération du formulaire:', error);
+    // Fallback sur les données existantes
+    previewingForm.value = form;
+  }
+  
   showPreviewModal.value = true;
 };
 
@@ -307,888 +548,121 @@ const formatDate = (dateString) => {
   }
 };
 
-// ✅ Fonction pour formater le formulaire pour l'aperçu
-const formatFormForPreview = (form) => {
-  if (!form) return null;
+// ✅ Fonction pour formater le temps relatif
+const formatRelativeTime = (date) => {
+  if (!date) return 'Jamais';
   
-  // Convertir le format de base de données vers le format attendu par FormPreview
-  return {
-    id: form.id,
-    title: form.title || 'Formulaire sans titre',
-    description: form.description || '',
-    steps: form.steps || [],
-    layout: form.layout || 'VERTICAL',
-    spacing: form.spacing || 'NORMAL',
-    submitButtonText: form.submitButtonText || 'Soumettre',
-    cancelButtonText: form.cancelButtonText || 'Annuler',
-    resetButtonText: form.resetButtonText || 'Réinitialiser'
-  };
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  
+  if (seconds < 30) return 'À l\'instant';
+  if (seconds < 60) return `Il y a ${seconds} secondes`;
+  if (minutes < 60) return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
+  if (hours < 24) return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
+  
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
 };
 
 // ✅ Chargement initial
 onMounted(() => {
   loadForms();
+  
+  // ✅ Polling automatique toutes les 30 secondes (optionnel)
+  const pollingInterval = setInterval(() => {
+    if (!document.hidden && !loading.value) {
+      console.log('🔄 Polling automatique - rafraîchissement des données');
+      loadForms(true);
+    }
+  }, 30000); // 30 secondes
+  
+  // Nettoyer l'intervalle quand le composant est démonté
+  onUnmounted(() => {
+    clearInterval(pollingInterval);
+  });
 });
 
-// Reste de votre code existant...
+// ✅ Rafraîchir quand on revient sur la page (navigation)
+onActivated(() => {
+  // Recharger les formulaires quand la page devient active
+  loadForms(true);
+});
+
+// ✅ Écouter les changements de visibilité de la page
+if (process.client) {
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !loading.value) {
+      // La page redevient visible, recharger les données
+      console.log('👁️ Page redevenue visible - rafraîchissement');
+      loadForms(true);
+    }
+  });
+}
 </script>
 
 <style scoped>
+/* Styles de base simplifiés */
 .forms-management {
   min-height: 100vh;
   background: #f8fafc;
 }
 
-/* Header */
-.page-header {
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 2rem;
-}
-
-.search-filters {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.search-box {
-  position: relative;
-  flex: 1;
-  min-width: 300px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.search-icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1rem;
-  height: 1rem;
-  color: #6b7280;
-}
-
-.clear-search {
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 0.25rem;
-  border: none;
-  background: none;
-  color: #6b7280;
-  cursor: pointer;
-  border-radius: 0.25rem;
-  transition: color 0.2s;
-}
-
-.clear-search:hover {
-  color: #374151;
-}
-
-.filters {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.filter-select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  background: white;
-  cursor: pointer;
-}
-
-/* Container principal */
-.forms-container {
-  padding: 2rem;
-}
-
-/* États de chargement et vide */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  color: #6b7280;
-}
-
-.loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  margin-bottom: 1rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #6b7280;
-}
-
-.empty-icon {
-  width: 4rem;
-  height: 4rem;
-  margin: 0 auto 1.5rem;
-  color: #d1d5db;
-}
-
-.empty-state h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #374151;
-  margin: 0 0 0.5rem 0;
-}
-
-.empty-state p {
-  margin: 0 0 1rem 0;
-}
-
-/* Grille des formulaires */
-.forms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-}
-
-/* Cards des formulaires */
-.form-card {
-  background: white;
-  border-radius: 1rem;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  transition: all 0.2s;
-  height: fit-content;
-}
-
-.form-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border-color: #d1d5db;
-}
-
-.form-card.deleting {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.card-header {
-  padding: 1.5rem 1.5rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.form-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.form-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 0.5rem 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.form-description {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
+/* Styles pour les icônes de formulaire */
+.form-icon-container {
   flex-shrink: 0;
-}
-
-.btn-preview {
-  padding: 0.5rem 1rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-preview:hover {
-  background: #2563eb;
-}
-
-.btn-edit {
-  padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-edit:hover {
-  background: #e5e7eb;
-}
-
-/* Stats de la card */
-.card-stats {
-  padding: 0 1.5rem 1rem;
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
-.stat-item svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-/* Footer de la card */
-.card-footer {
-  padding: 1rem 1.5rem 1.5rem;
-  border-top: 1px solid #f3f4f6;
-}
-
-.form-dates {
-  margin-bottom: 1rem;
-}
-
-.date-created,
-.date-updated {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  color: #6b7280;
-  font-size: 0.75rem;
-  margin: 0 0 0.25rem 0;
-}
-
-.date-created svg,
-.date-updated svg {
-  width: 0.75rem;
-  height: 0.75rem;
-}
-
-.card-main-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-/* Boutons */
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  flex: 1;
-  justify-content: center;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-.btn-outline {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: transparent;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  flex: 1;
-  justify-content: center;
-}
-
-.btn-outline:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-  color: #374151;
-}
-
-.btn-danger {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #dc2626;
-}
-
-.btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Pagination */
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.pagination-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
-  background: white;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.875rem;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-info {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-/* Modal de prévisualisation */
-.preview-overlay {
-  z-index: 1100;
-}
-
-.preview-modal {
-  background: white;
-  border-radius: 1rem;
-  width: 95vw;
-  max-width: 1200px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-}
-
-.preview-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f8fafc;
-}
-
-.preview-header-info {
-  flex: 1;
-}
-
-.preview-form-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.25rem;
-}
-
-.preview-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-  color: #3b82f6;
-}
-
-.preview-form-title span {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.preview-form-name {
-  color: #6b7280;
-  margin: 0;
-  font-size: 0.875rem;
-  padding-left: 2.25rem;
-}
-
-.preview-close-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-
-.preview-close-btn:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.preview-close-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.preview-modal-body {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.preview-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  color: #6b7280;
-  flex: 1;
-}
-
-.preview-loading .loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  margin-bottom: 1rem;
-  color: #3b82f6;
-}
-
-.preview-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  color: #6b7280;
-  flex: 1;
-}
-
-.preview-error .error-icon {
   width: 3rem;
   height: 3rem;
-  color: #ef4444;
-  margin-bottom: 1rem;
-}
-
-.preview-content-wrapper {
-  flex: 1;
-  overflow: auto;
-  background: #f8fafc;
-  /* ✅ Amélioration du scroll pour les formulaires longs */
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
-}
-
-.preview-content-wrapper::-webkit-scrollbar {
-  width: 8px;
-}
-
-.preview-content-wrapper::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.preview-content-wrapper::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-.preview-content-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-.preview-content-wrapper :deep(.form-preview) {
-  height: auto;
-  min-height: 100%;
-  box-shadow: none;
-  border-radius: 0;
-}
-
-.preview-content-wrapper :deep(.preview-container) {
-  background: transparent;
-  padding: 1.5rem 2rem;
-  min-height: auto;
-}
-
-/* ✅ Amélioration pour les formulaires multi-étapes longs */
-.preview-content-wrapper :deep(.preview-form) {
-  max-width: none;
-  width: 100%;
-}
-
-.preview-content-wrapper :deep(.form-header) {
-  margin-bottom: 1.5rem;
-}
-
-.preview-content-wrapper :deep(.form-actions) {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  position: sticky;
-  bottom: 0;
-  background: #f8fafc;
-  border-top: 1px solid #e5e7eb;
-  z-index: 10;
-}
-
-.preview-modal-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f8fafc;
-}
-
-.preview-stats {
-  display: flex;
-  gap: 1.5rem;
-}
-
-.preview-stats .stat {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.preview-stats .stat svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.preview-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
 }
 
-.confirm-modal {
-  background: white;
-  border-radius: 1rem;
-  width: 100%;
-  max-width: 400px;
-  overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.warning-icon {
+.form-icon {
   width: 1.5rem;
   height: 1.5rem;
-  color: #f59e0b;
+  color: #3b82f6;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-body p {
-  margin: 0 0 1rem 0;
-  color: #374151;
-}
-
-.warning-text {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-style: italic;
-}
-
-.deletion-stats {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #fef2f2;
-  border-radius: 0.5rem;
-}
-
-.deletion-stats .stat {
+.modal-form-icon-container {
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 0.75rem;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  color: #991b1b;
-  font-size: 0.875rem;
+  justify-content: center;
 }
 
-.deletion-stats .stat svg {
-  width: 1rem;
-  height: 1rem;
+.modal-form-icon {
+  width: 2rem;
+  height: 2rem;
+  color: #3b82f6;
 }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  border-top: 1px solid #f3f4f6;
-  background: #fafbfc;
+/* Limitation du texte sur 2 lignes */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+  max-height: calc(2 * 1.4em);
 }
 
-/* Notifications */
-.notification {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  max-width: 400px;
-  animation: slideIn 0.3s ease-out;
-}
-
-.notification.success {
-  background: #10b981;
-  color: white;
-}
-
-.notification.error {
-  background: #ef4444;
-  color: white;
-}
-
-.notification.warning {
-  background: #f59e0b;
-  color: white;
-}
-
-.notification-close {
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: background-color 0.2s;
-}
-
-.notification-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .page-header {
-    padding: 1rem;
-  }
-
-  .header-content {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .search-filters {
-    flex-direction: column;
-  }
-
-  .search-box {
-    min-width: unset;
-  }
-
-  .forms-container {
-    padding: 1rem;
-  }
-
-  .forms-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .card-main-actions {
-    flex-direction: column;
-  }
-
-  .modal-overlay {
-    padding: 0.5rem;
-  }
-
-  /* Modal de prévisualisation responsive */
-  .preview-modal {
-    width: 100vw;
-    max-width: none;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-
-  .preview-modal-header {
-    padding: 1rem 1.5rem;
-  }
-
-  .preview-form-title span {
-    font-size: 1rem;
-  }
-
-  .preview-modal-footer {
-    padding: 1rem 1.5rem;
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .preview-stats {
-    justify-content: center;
-  }
-
-  .preview-actions {
-    justify-content: stretch;
-  }
-
-  .preview-actions button {
-    flex: 1;
-  }
-
-  /* ✅ Amélioration du scroll sur mobile */
-  .preview-content-wrapper :deep(.preview-container) {
-    padding: 1rem 1.5rem;
-  }
-
-  .preview-content-wrapper :deep(.form-actions) {
-    margin-top: 1rem;
-    padding-top: 1rem;
-  }
-
-  /* ✅ Amélioration pour les petits écrans */
-  .preview-content-wrapper :deep(.form-title) {
-    font-size: 1.5rem;
-  }
-
-  .preview-content-wrapper :deep(.progress-indicator) {
-    margin: 0 auto 1.5rem;
-  }
-}
-
-/* Utilitaires */
-.mt-4 {
-  margin-top: 1rem;
-}
-
+/* Animation spin */
 .animate-spin {
   animation: spin 1s linear infinite;
 }
@@ -1199,6 +673,27 @@ onMounted(() => {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Améliorations UX pour les cards */
+.group:hover .form-icon-container {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.group:hover .form-icon {
+  color: #2563eb;
+}
+
+/* Responsiveness améliorée */
+@media (max-width: 640px) {
+  .forms-management .p-6 {
+    padding: 1rem;
+  }
+  
+  .grid {
+    gap: 1rem;
   }
 }
 </style>

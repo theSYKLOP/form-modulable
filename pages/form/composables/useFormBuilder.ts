@@ -163,6 +163,7 @@ export const useFormBuilder = () => {
         id: uniqueId, // ✅ ID unique généré
         title: `Nouveau formulaire ${timestamp}`, // ✅ Titre avec heure pour unicité
         description: '',
+        icon: 'heroicons:document-text', // ✅ Icône par défaut
         layout: 'VERTICAL',
         spacing: 'NORMAL',
         steps: [

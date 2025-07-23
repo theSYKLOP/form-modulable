@@ -241,6 +241,7 @@ model Form {
   id          String   @id @default(cuid())
   title       String
   description String?
+  icon        String?  @default("heroicons:document-text") // Icône du formulaire
   
   // Configuration
   mode               FormMode @default(EDIT)
@@ -296,8 +297,10 @@ model FormSubmission {
   data      Json
   metadata  Json? // IP, user agent, etc.
   
-  // État
-  status    SubmissionStatus @default(COMPLETED)
+  // État et progression
+  status      SubmissionStatus @default(COMPLETED)
+  currentStep Int?             @default(0) // Étape actuelle pour les brouillons
+  submittedAt DateTime?        // Date de soumission finale
   
   // Métadonnées
   createdAt DateTime @default(now())

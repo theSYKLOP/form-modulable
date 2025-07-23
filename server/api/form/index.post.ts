@@ -62,6 +62,7 @@ export default defineEventHandler(async (event) => {
       data: {
         title: body.title.trim(),
         description: body.description?.trim() || '',
+        icon: body.icon?.trim() || 'heroicons:document-text', // ✅ Nouveau champ
         layout: ['VERTICAL', 'HORIZONTAL'].includes(body.layout) ? body.layout : 'VERTICAL',
         spacing: ['COMPACT', 'NORMAL', 'RELAXED'].includes(body.spacing) ? body.spacing : 'NORMAL',
         mode: ['EDIT', 'READONLY', 'PREVIEW'].includes(body.mode) ? body.mode : 'EDIT',

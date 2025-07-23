@@ -40,7 +40,7 @@
             
             <!-- Dashboard link for admin users only -->
             <NuxtLink 
-              v-if="isAuthenticated && user?.role === 'ADMIN'"
+              v-if="isAuthenticated && isAdmin"
               to="/admin" 
               class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               :class="{ 'text-blue-600 bg-blue-50': $route.path.startsWith('/admin') }"
@@ -110,7 +110,7 @@
             
             <!-- Dashboard mobile -->
             <NuxtLink 
-              v-if="isAuthenticated && user?.role === 'ADMIN'"
+              v-if="isAuthenticated && isAdmin"
               to="/admin" 
               class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
               @click="mobileMenuOpen = false"
@@ -169,7 +169,7 @@
               <li><NuxtLink to="/operations" class="text-gray-400 hover:text-white transition-colors">Opérations</NuxtLink></li>
               <li><NuxtLink to="/about" class="text-gray-400 hover:text-white transition-colors">À propos</NuxtLink></li>
               <li v-if="!isAuthenticated"><NuxtLink to="/auth?form=login" class="text-gray-400 hover:text-white transition-colors">Connexion</NuxtLink></li>
-              <li v-else-if="user?.role === 'ADMIN'"><NuxtLink to="/admin" class="text-gray-400 hover:text-white transition-colors">Dashboard</NuxtLink></li>
+              <li v-else-if="isAdmin"><NuxtLink to="/admin" class="text-gray-400 hover:text-white transition-colors">Dashboard</NuxtLink></li>
             </ul>
           </div>
 
@@ -219,9 +219,8 @@
 </template>
 
 <script setup>
-// Store d'authentification
-const authStore = useAuthStore()
-const { user, isAuthenticated } = storeToRefs(authStore)
+// Composable d'authentification
+const { user, isAuthenticated, isAdmin, logout } = useAuth()
 
 // État local
 const mobileMenuOpen = ref(false)
@@ -229,7 +228,7 @@ const mobileMenuOpen = ref(false)
 // Fonction de déconnexion
 const handleLogout = async () => {
   try {
-    await authStore.logout()
+    await logout()
     await navigateTo('/')
   } catch (error) {
     console.error('Erreur lors de la déconnexion:', error)

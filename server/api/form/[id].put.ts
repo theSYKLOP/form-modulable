@@ -91,6 +91,7 @@ export default defineEventHandler(async (event) => {
     
     if (body.title !== undefined) updateData.title = body.title.trim()
     if (body.description !== undefined) updateData.description = body.description?.trim() || ''
+    if (body.icon !== undefined) updateData.icon = body.icon?.trim() || 'heroicons:document-text' // ✅ Nouveau champ
     if (body.layout !== undefined) {
       updateData.layout = ['VERTICAL', 'HORIZONTAL'].includes(body.layout) ? body.layout : 'VERTICAL'
     }

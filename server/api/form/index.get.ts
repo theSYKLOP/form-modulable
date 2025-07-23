@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
     const sortOrder = (query.sortOrder as string) || 'desc'
     const search = query.search as string
     const status = query.status as string
+    const isPublished = query.isPublished as string
     const userId = query.userId as string
 
     // Construction du where clause
@@ -26,7 +27,10 @@ export default defineEventHandler(async (event) => {
       ]
     }
     
-    if (status === 'published') {
+    // Support du paramètre isPublished direct
+    if (isPublished !== undefined) {
+      where.isPublished = isPublished === 'true'
+    } else if (status === 'published') {
       where.isPublished = true
     } else if (status === 'draft') {
       where.isPublished = false
@@ -54,6 +58,7 @@ export default defineEventHandler(async (event) => {
           id: true,
           title: true,
           description: true,
+          icon: true, // ✅ Nouveau champ
           layout: true,
           spacing: true,
           isPublished: true,
@@ -96,6 +101,15 @@ export default defineEventHandler(async (event) => {
 
     // Transformation des données pour inclure les statistiques
     const formsWithStats = forms.map(form => {
+      console.log('Debug Form:', {
+        id: form.id,
+        title: form.title,
+        stepsType: typeof form.steps,
+        stepsIsArray: Array.isArray(form.steps),
+        stepsLength: Array.isArray(form.steps) ? form.steps.length : 0,
+        stepsContent: form.steps
+      })
+
       // ✅ Calcul du nombre de champs depuis la nouvelle structure steps
       let fieldsCount = 0
       if (form.steps && Array.isArray(form.steps)) {
@@ -104,10 +118,18 @@ export default defineEventHandler(async (event) => {
         }, 0)
       }
 
+      const stepsCount = Array.isArray(form.steps) ? form.steps.length : 0
+      
+      console.log('Calculated stats for form', form.id, ':', {
+        stepsCount,
+        fieldsCount
+      })
+
       return {
         id: form.id,
         title: form.title,
         description: form.description,
+        icon:form.icon, // ✅ Nouveau champ
         layout: form.layout,
         spacing: form.spacing,
         isPublished: form.isPublished,
@@ -117,7 +139,7 @@ export default defineEventHandler(async (event) => {
         updatedAt: form.updatedAt,
         publishedAt: form.publishedAt,
         // ✅ Statistiques calculées depuis steps
-        stepsCount: Array.isArray(form.steps) ? form.steps.length : 0,
+        stepsCount,
         fieldsCount,
         submissionsCount: form._count.submissions,
         // Relations
