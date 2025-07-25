@@ -1,21 +1,25 @@
 <template>
-  <div>
-    <!-- Section Hero avec Carousel optimisé -->
+  <div class="min-h-screen bg-gray-50">
+    <!-- Section Hero avec design amélioré -->
     <section class="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800">
+      <div class="absolute inset-0 bg-black/10"></div>
       <!-- Utilisation de l'intersection observer pour le lazy loading -->
       <div ref="heroSection" class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div class="text-center">
-          <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl mb-8 mx-auto shadow-2xl">
+            <Icon name="heroicons:document-text-20-solid" class="w-10 h-10 text-white" />
+          </div>
+          <h1 class="text-5xl font-bold text-white mb-6 tracking-tight">
             <template v-if="!isAuthenticated || isAdmin">
               Simplifiez vos
-              <span class="block text-blue-200">démarches administratives</span>
+              <span class="bg-gradient-to-r from-blue-200 to-blue-100 bg-clip-text text-transparent">démarches administratives</span>
             </template>
             <template v-else>
               Bienvenue {{ userDisplayName }}
-              <span class="block text-blue-200">Accédez à nos services</span>
+              <span class="bg-gradient-to-r from-blue-200 to-blue-100 bg-clip-text text-transparent">Accédez à nos services</span>
             </template>
           </h1>
-          <p class="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
+          <p class="text-xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
             <template v-if="!isAuthenticated || isAdmin">
               Fini les files d'attente et les déplacements ! Effectuez toutes vos démarches en ligne, 
               rapidement et en toute sécurité.
@@ -25,17 +29,17 @@
               rapidement et en toute sécurité.
             </template>
           </p>
-          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <template v-if="!isAuthenticated">
               <NuxtLink 
                 to="/auth" 
-                class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+                class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 Commencer maintenant
               </NuxtLink>
               <button 
                 @click="scrollToOperations"
-                class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+                class="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
               >
                 Découvrir les services
               </button>
@@ -44,13 +48,13 @@
               <!-- Boutons pour les administrateurs -->
               <NuxtLink 
                 to="/admin/formulaires" 
-                class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+                class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 Mes formulaires
               </NuxtLink>
               <NuxtLink 
                 to="/form" 
-                class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+                class="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
               >
                 Créer un formulaire
               </NuxtLink>
@@ -59,13 +63,13 @@
               <!-- Boutons pour les utilisateurs normaux -->
               <button 
                 @click="scrollToOperations"
-                class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+                class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 Nos services
               </button>
               <NuxtLink 
                 to="/auth/logout" 
-                class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+                class="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
               >
                 Se déconnecter
               </NuxtLink>
@@ -75,11 +79,15 @@
       </div>
     </section>
 
-    <!-- Carousel optimisé avec lazy loading -->
-    <section id="operations" ref="operationsSection" class="py-16 bg-gray-50">
+    <!-- Carousel optimisé avec design cohérent -->
+    <section id="operations" ref="operationsSection" class="py-20 bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+        <div class="text-center mb-16">
+          <div class="inline-flex items-center space-x-2 text-blue-600 font-semibold text-sm uppercase tracking-wide mb-4">
+            <Icon name="heroicons:document-text-20-solid" class="w-4 h-4" />
+            <span>Nos Services</span>
+          </div>
+          <h2 class="text-4xl font-bold text-gray-900 mb-6 leading-tight">
             <template v-if="!isAuthenticated || isAdmin">
               Nos formulaires disponibles
             </template>
@@ -87,7 +95,7 @@
               Formulaires à votre disposition
             </template>
           </h2>
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p class="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
             <template v-if="!isAuthenticated || isAdmin">
               Découvrez tous les formulaires que vous pouvez remplir en ligne
             </template>
@@ -98,27 +106,34 @@
         </div>
 
         <!-- État de chargement -->
-        <div v-if="loading" class="flex items-center justify-center py-12">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span class="ml-3 text-gray-600">Chargement des formulaires...</span>
+        <div v-if="loading" class="flex items-center justify-center py-16">
+          <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600 font-medium">Chargement des formulaires...</p>
+          </div>
         </div>
 
         <!-- État d'erreur -->
-        <div v-else-if="error" class="text-center py-12">
-          <div class="text-red-600 mb-4">{{ error }}</div>
-          <button 
-            @click="loadForms" 
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-          >
-            Réessayer
-          </button>
+        <div v-else-if="error" class="text-center py-16">
+          <div class="bg-white rounded-2xl p-8 shadow-lg max-w-md mx-auto">
+            <Icon name="heroicons:exclamation-triangle-20-solid" class="mx-auto h-12 w-12 text-red-500 mb-4" />
+            <div class="text-red-600 mb-6 font-medium">{{ error }}</div>
+            <button 
+              @click="loadForms" 
+              class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
+              Réessayer
+            </button>
+          </div>
         </div>
 
         <!-- État vide -->
-        <div v-else-if="forms.length === 0" class="text-center py-12">
-          <Icon name="heroicons:document-text" class="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun formulaire disponible</h3>
-          <p class="text-gray-600">Les formulaires seront bientôt disponibles.</p>
+        <div v-else-if="forms.length === 0" class="text-center py-16">
+          <div class="bg-white rounded-2xl p-12 shadow-lg max-w-md mx-auto">
+            <Icon name="heroicons:document-text-20-solid" class="mx-auto h-16 w-16 text-gray-400 mb-6" />
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Aucun formulaire disponible</h3>
+            <p class="text-gray-600 leading-relaxed">Les formulaires seront bientôt disponibles.</p>
+          </div>
         </div>
 
         <!-- Carousel des formulaires -->
@@ -137,32 +152,32 @@
                   <div 
                     v-for="form in slide" 
                     :key="form.id"
-                    class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer group"
+                    class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-2 border border-gray-100"
                     @mouseenter="preloadOperationRoute(form)"
                     @click="goToForm(form)"
                   >
-                    <div class="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-lg mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
-                      <Icon :name="form.icon" class="w-8 h-8 text-blue-600" />
+                    <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                      <Icon :name="form.icon" class="w-8 h-8 text-white" />
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2 text-center group-hover:text-blue-600 transition-colors">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center group-hover:text-blue-600 transition-colors">
                       {{ form.title }}
                     </h3>
-                    <p class="text-gray-600 text-center mb-4 line-clamp-2">
+                    <p class="text-gray-600 text-center mb-6 line-clamp-2 leading-relaxed">
                       {{ form.description }}
                     </p>
-                    <div class="flex justify-center items-center gap-4 text-sm text-gray-500 mb-4">
-                      <span class="flex items-center gap-1">
-                        <Icon name="heroicons:queue-list" class="w-4 h-4" />
+                    <div class="flex justify-center items-center gap-6 text-sm text-gray-500 mb-6">
+                      <span class="flex items-center gap-2">
+                        <Icon name="heroicons:queue-list-20-solid" class="w-4 h-4" />
                         {{ form.stepsCount }} étapes
                       </span>
-                      <span class="flex items-center gap-1">
-                        <Icon name="heroicons:document" class="w-4 h-4" />
+                      <span class="flex items-center gap-2">
+                        <Icon name="heroicons:document-20-solid" class="w-4 h-4" />
                         {{ form.fieldsCount }} champs
                       </span>
                     </div>
                     <div class="text-center">
-                      <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                        <Icon name="heroicons:clock" class="w-4 h-4 mr-1" />
+                      <span class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-green-100 to-green-200 text-green-800 shadow-sm">
+                        <Icon name="heroicons:clock-20-solid" class="w-4 h-4 mr-2" />
                         {{ form.duration }}
                       </span>
                     </div>
@@ -173,27 +188,31 @@
           </div>
           
           <!-- Indicateurs de navigation du carousel -->
-          <div v-if="carouselSlides.length > 1" class="flex justify-center mt-8 gap-2">
+          <div v-if="carouselSlides.length > 1" class="flex justify-center mt-12 gap-3">
             <button 
               v-for="(slide, index) in carouselSlides" 
               :key="index"
               @click="debouncedSlideChange(index)"
-              class="w-3 h-3 rounded-full transition-colors"
-              :class="currentSlide === index ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'"
+              class="w-4 h-4 rounded-full transition-all duration-300"
+              :class="currentSlide === index ? 'bg-blue-600 scale-125' : 'bg-gray-300 hover:bg-gray-400'"
             />
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Avantages -->
-    <section class="py-16 bg-white">
+    <!-- Section Avantages avec design cohérent -->
+    <section class="py-20 bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div class="inline-flex items-center space-x-2 text-blue-600 font-semibold text-sm uppercase tracking-wide mb-4">
+            <Icon name="heroicons:sparkles-20-solid" class="w-4 h-4" />
+            <span>Nos Avantages</span>
+          </div>
+          <h2 class="text-4xl font-bold text-gray-900 mb-6 leading-tight">
             Pourquoi choisir Form Modulable ?
           </h2>
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p class="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Une solution moderne qui révolutionne vos démarches administratives
           </p>
         </div>
@@ -202,15 +221,15 @@
           <div 
             v-for="advantage in advantages" 
             :key="advantage.id"
-            class="text-center p-6 rounded-lg hover:bg-gray-50 transition-colors"
+            class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 group"
           >
-            <div class="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mx-auto mb-4">
-              <Icon :name="advantage.icon" class="w-8 h-8 text-blue-600" />
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <Icon :name="advantage.icon" class="w-8 h-8 text-white" />
             </div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">
               {{ advantage.title }}
             </h3>
-            <p class="text-gray-600">
+            <p class="text-gray-600 text-center leading-relaxed">
               {{ advantage.description }}
             </p>
           </div>
@@ -218,14 +237,18 @@
       </div>
     </section>
 
-    <!-- Témoignages -->
-    <section class="py-16 bg-gray-50">
+    <!-- Section Témoignages avec design amélioré -->
+    <section class="py-20 bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div class="inline-flex items-center space-x-2 text-blue-600 font-semibold text-sm uppercase tracking-wide mb-4">
+            <Icon name="heroicons:chat-bubble-left-right-20-solid" class="w-4 h-4" />
+            <span>Témoignages</span>
+          </div>
+          <h2 class="text-4xl font-bold text-gray-900 mb-6 leading-tight">
             Ce que disent nos utilisateurs
           </h2>
-          <p class="text-lg text-gray-600">
+          <p class="text-lg text-gray-600 leading-relaxed">
             Découvrez les témoignages de ceux qui ont simplifié leurs démarches
           </p>
         </div>
@@ -234,26 +257,26 @@
           <div 
             v-for="testimonial in testimonials" 
             :key="testimonial.id"
-            class="bg-white rounded-lg shadow-lg p-6"
+            class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100"
           >
-            <div class="flex items-center mb-4">
-              <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+            <div class="flex items-center mb-6">
+              <div class="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
                 {{ testimonial.name.charAt(0) }}
               </div>
               <div class="ml-4">
-                <h4 class="font-semibold text-gray-900">{{ testimonial.name }}</h4>
+                <h4 class="font-semibold text-gray-900 text-lg">{{ testimonial.name }}</h4>
                 <p class="text-sm text-gray-600">{{ testimonial.role }}</p>
               </div>
             </div>
-            <div class="flex mb-4">
+            <div class="flex mb-6">
               <Icon 
                 v-for="n in 5" 
                 :key="n"
-                name="heroicons:star-solid" 
+                name="heroicons:star-20-solid" 
                 class="w-5 h-5 text-yellow-400" 
               />
             </div>
-            <p class="text-gray-600">
+            <p class="text-gray-600 leading-relaxed">
               "{{ testimonial.content }}"
             </p>
           </div>
@@ -261,10 +284,11 @@
       </div>
     </section>
 
-    <!-- CTA final -->
-    <section class="py-16 bg-blue-600">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+    <!-- CTA final avec design cohérent -->
+    <section class="py-20 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 relative overflow-hidden">
+      <div class="absolute inset-0 bg-black/10"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-4xl font-bold text-white mb-6 leading-tight">
           <template v-if="!isAuthenticated">
             Prêt à simplifier vos démarches ?
           </template>
@@ -275,7 +299,7 @@
             Explorez nos services disponibles
           </template>
         </h2>
-        <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+        <p class="text-xl text-blue-100 mb-12 max-w-2xl mx-auto leading-relaxed">
           <template v-if="!isAuthenticated">
             Rejoignez des milliers d'utilisateurs qui ont déjà adopté la solution numérique
           </template>
@@ -286,17 +310,17 @@
             Accédez à tous nos formulaires pour effectuer vos démarches en toute simplicité
           </template>
         </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <div class="flex flex-col sm:flex-row gap-6 justify-center">
           <template v-if="!isAuthenticated">
             <NuxtLink 
               to="/auth" 
-              class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+              class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Créer mon compte
             </NuxtLink>
             <NuxtLink 
               to="/form" 
-              class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+              class="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
             >
               Voir tous les services
             </NuxtLink>
@@ -305,13 +329,13 @@
             <!-- Boutons pour les administrateurs -->
             <NuxtLink 
               to="/admin/formulaires" 
-              class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+              class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Gérer mes formulaires
             </NuxtLink>
             <NuxtLink 
               to="/form" 
-              class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+              class="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
             >
               Créer un nouveau formulaire
             </NuxtLink>
@@ -320,13 +344,13 @@
             <!-- Boutons pour les utilisateurs normaux -->
             <button 
               @click="scrollToOperations"
-              class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+              class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Explorer nos services
             </button>
             <NuxtLink 
               to="/auth/profile" 
-              class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+              class="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
             >
               Mon profil
             </NuxtLink>
@@ -394,37 +418,37 @@ const advantages = ref([
     id: 1,
     title: "Rapide et efficace",
     description: "Effectuez vos démarches en quelques minutes seulement",
-    icon: "heroicons:lightning-bolt"
+    icon: "heroicons:bolt-20-solid"
   },
   {
     id: 2,
     title: "Disponible 24h/24",
     description: "Accédez à nos services à tout moment, même le weekend",
-    icon: "heroicons:clock"
+    icon: "heroicons:clock-20-solid"
   },
   {
     id: 3,
     title: "Sécurisé",
     description: "Vos données sont protégées par un chiffrement de niveau bancaire",
-    icon: "heroicons:shield-check"
+    icon: "heroicons:shield-check-20-solid"
   },
   {
     id: 4,
     title: "Suivi en temps réel",
     description: "Suivez l'avancement de vos dossiers à tout moment",
-    icon: "heroicons:eye"
+    icon: "heroicons:eye-20-solid"
   },
   {
     id: 5,
     title: "Support dédié",
     description: "Une équipe disponible pour vous accompagner",
-    icon: "heroicons:chat-bubble-bottom-center"
+    icon: "heroicons:chat-bubble-bottom-center-text-20-solid"
   },
   {
     id: 6,
     title: "Économique",
     description: "Réduisez vos frais de déplacement et gagnez du temps",
-    icon: "heroicons:currency-euro"
+    icon: "heroicons:currency-euro-20-solid"
   }
 ])
 

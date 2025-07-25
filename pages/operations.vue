@@ -8,6 +8,11 @@
           <p class="page-description">
             Accédez et soumettez vos formulaires en quelques clics
           </p>
+          <div v-if="authStore.user" class="auth-info">
+            <span class="text-sm text-green-600 font-medium">
+              ✓ Connecté en tant que {{ authStore.user.firstName || authStore.user.email }}
+            </span>
+          </div>
         </div>
         <div class="header-actions">
           <button @click="refreshForms" class="refresh-btn" :disabled="loading">
@@ -299,7 +304,7 @@ interface FormWithOperationData extends FormConfig {
   template?: any
 }
 
-// Meta de la page
+// Meta de la page avec authentification requise
 definePageMeta({
   layout: 'default'
 })
@@ -408,9 +413,30 @@ const loadForms = async () => {
   loading.value = true
   
   try {
-    console.log('🔄 Chargement des formulaires publics...')
+    // ✅ Vérifier l'authentification avant de charger
+    if (!authStore.isAuthenticated || !authStore.token) {
+      showToast('error', 'Vous devez être connecté pour accéder aux formulaires')
+      await navigateTo('/auth?form=login&redirect=/operations')
+      return
+    }
+
+    console.log('🔄 Chargement des formulaires pour utilisateur authentifié...')
     
-    const response = await fetch('/api/form?isPublished=true')
+    const response = await fetch('/api/form?isPublished=true', {
+      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (response.status === 401) {
+      console.warn('🔒 Token invalide - redirection vers login')
+      showToast('error', 'Session expirée - veuillez vous reconnecter')
+      await navigateTo('/auth?form=login&redirect=/operations')
+      return
+    }
+    
     const data = await response.json()
     
     if (data.success && data.data?.forms) {
@@ -420,10 +446,10 @@ const loadForms = async () => {
         isUpdated: isFormUpdated(form.updatedAt, form.createdAt)
       } as FormWithOperationData))
       
-      console.log('✅ Formulaires chargés:', forms.value.length)
+      console.log('✅ Formulaires publiés chargés pour utilisateur authentifié:', forms.value.length)
     } else {
       console.error('❌ Réponse API invalide:', data)
-      showToast('error', 'Format de réponse inattendu')
+      showToast('error', data.message || 'Format de réponse inattendu')
     }
   } catch (error: any) {
     console.error('❌ Erreur chargement formulaires:', error)
@@ -441,8 +467,28 @@ const selectForm = async (form: FormWithOperationData) => {
   console.log('📋 Sélection du formulaire:', form.id)
   
   try {
+    // ✅ Vérifier l'authentification
+    if (!authStore.isAuthenticated || !authStore.token) {
+      showToast('error', 'Vous devez être connecté pour accéder aux formulaires')
+      await navigateTo('/auth?form=login&redirect=/operations')
+      return
+    }
+
     // Charger les données complètes du formulaire avec steps et fields
-    const response = await fetch(`/api/form/${form.id}`)
+    const response = await fetch(`/api/form/${form.id}`, {
+      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (response.status === 401) {
+      showToast('error', 'Session expirée - veuillez vous reconnecter')
+      await navigateTo('/auth?form=login&redirect=/operations')
+      return
+    }
+    
     const data = await response.json()
     
     if (data.success && data.data) {
@@ -694,20 +740,25 @@ watch([searchQuery, categoryFilter, showFavoritesOnly], () => {
 
 // Lifecycle
 onMounted(async () => {
+  // ✅ Vérification d'authentification obligatoire
+  if (!authStore.isAuthenticated || !authStore.token) {
+    console.log('🔒 Utilisateur non authentifié - redirection vers login')
+    await navigateTo('/auth?form=login&redirect=/operations')
+    return
+  }
+
+  console.log('✅ Utilisateur authentifié - chargement de la page operations')
+  
   // Charger d'abord les formulaires
   await loadForms()
   
   // Charger les favoris depuis localStorage
   loadFavorites()
   
-  // Charger les brouillons seulement si connecté
+  // Charger les brouillons pour l'utilisateur connecté
   console.log('🔍 État authentification:', authStore.isAuthenticated, authStore.token)
-  if (authStore.isAuthenticated && authStore.token) {
-    console.log('✅ Utilisateur connecté - chargement des brouillons')
-    loadDrafts()
-  } else {
-    console.log('❌ Utilisateur non connecté - pas de chargement des brouillons')
-  }
+  console.log('✅ Utilisateur connecté - chargement des brouillons')
+  loadDrafts()
 })
 </script>
 
@@ -741,6 +792,10 @@ onMounted(async () => {
 .page-description {
   color: #4b5563;
   margin-top: 0.25rem;
+}
+
+.auth-info {
+  margin-top: 0.5rem;
 }
 
 .refresh-btn {

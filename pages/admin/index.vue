@@ -121,7 +121,7 @@
               </div>
             </div>
             <div class="p-8">
-              <AdminLineChart 
+              <LineChart 
                 v-if="dashboardData.chartData.registrations.length > 0" 
                 :data="dashboardData.chartData.registrations" 
                 color="#3b82f6"
@@ -149,7 +149,7 @@
               </div>
             </div>
             <div class="p-8">
-              <AdminBarChart 
+              <BarChart 
                 v-if="dashboardData.chartData.submissions.length > 0" 
                 :data="dashboardData.chartData.submissions" 
                 color="#10b981"
@@ -268,6 +268,10 @@
 </template>
 
 <script setup>
+// Import des composants de graphiques
+import BarChart from '~/components/admin/BarChart.vue'
+import LineChart from '~/components/admin/LineChart.vue'
+
 // Layout admin
 definePageMeta({
   layout: 'admin'

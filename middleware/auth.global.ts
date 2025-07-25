@@ -22,8 +22,18 @@ export default defineNuxtRouteMiddleware((to) => {
     }
   }
   
-  // ✅ Pages publiques qui ne nécessitent pas d'authentification (page d'accueil exclue de la vérification ci-dessus)
-  if (to.path === '/') {
+  // ✅ Pages publiques qui ne nécessitent pas d'authentification
+  const publicPages = ['/', '/about']
+  if (publicPages.includes(to.path)) {
+    return
+  }
+  
+  // ✅ Vérification d'authentification pour la page operations
+  if (to.path === '/operations') {
+    if (!authStore.isAuthenticated) {
+      return navigateTo(`/auth?form=login&redirect=${encodeURIComponent(to.fullPath)}`)
+    }
+    // Si authentifié, laisser passer (peu importe le rôle)
     return
   }
   
